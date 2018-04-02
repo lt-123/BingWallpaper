@@ -53,7 +53,11 @@ public class SyncWallpaperService extends IntentService {
 
             HttpURLConnection urlConnection = (HttpURLConnection) new URL(BING_WALLPAPER_API).openConnection();
             String resp = new BufferedReader(new InputStreamReader(urlConnection.getInputStream())).readLine();
-            String jpgUrl = new JSONObject(resp).getJSONArray("images").getJSONObject(0).getString("url");
+            String jpgUrl = new JSONObject(resp)
+                    .getJSONArray("images")
+                    .getJSONObject(0)
+                    .getString("url")
+                    .replace("1920x1080", "1080x1920");
             Log.d(TAG, "jpgUrl: " + jpgUrl);
 
             String urls[] = jpgUrl.split("/");
