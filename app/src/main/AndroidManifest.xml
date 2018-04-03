@@ -19,12 +19,21 @@
 
         <activity
             android:name=".MainActivity"
-            android:excludeFromRecents="true"
-            android:noHistory="true">
+            android:excludeFromRecents="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".MainActivity$Main2Activity"
+            android:excludeFromRecents="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SET_WALLPAPER" />
+
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
@@ -33,13 +42,17 @@
         <receiver
             android:name=".MainBroadcastReceiver"
             android:exported="true">
-
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
 
                 <action android:name="android.intent.action.DATE_CHANGED" />
-            </intent-filter>
 
+                <action android:name="android.provider.Telephony.SECRET_CODE" />
+
+                <data
+                    android:host="2464"
+                    android:scheme="android_secret_code" />
+            </intent-filter>
         </receiver>
 
     </application>

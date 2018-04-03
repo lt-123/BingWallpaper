@@ -1,3 +1,32 @@
 <resources>
     <string name="app_name">BingWallpaper</string>
+
+    <string name="manual_set_bt">手动同步</string>
+    <string name="hide_icon_bt">隐藏图标</string>
+    <string name="show_icon_bt">显示图标</string>
+    <string name="show_src_bt">查看源码</string>
+
+    <string name="toast_start_sync">开始同步桌面壁纸，请返回桌面查看效果</string>
+    <string name="text">BingWallpaper\n
+        \n
+自动设置 Bing 每日美图为壁纸，设置时机如下：\n
+  \t手动设置；\n
+  \t开启启动时会尝试设置；\n
+  \t当日期发生变更时设置；\n
+当因网络等原因设置失败时，会约在半小时后会重试，直到设置成功。\n
+\n
+说明：\n
+  \t“隐藏图标”功能可隐藏桌面图标；\n
+  \t隐藏后可通过桌面设置壁纸中，选择 “BingWallpaper” 或拨号盘输入 *#*#2464#*#* 进入软件界面，(2464 为 T9 输入法 bing 拼音全拼)；\n
+  \t默认下载的壁纸为"1920x1080"（竖屏）分辨率，保存在“BingWallpaper”文件夹中；\n
+  \tAndroid N 以上版本会同时设置锁屏壁纸。\n
+\n
+本软件不会常驻后台，但需接收系统广播，请在管家中加白。\n
+\n
+本软件纯绿色，不常驻后台，无不良代码，具体可查阅源码。\n
+\n
+此为第一版本，功能单一，如过大家有需要什么功能可酷安评论中直接说，我尽量改。\n
+\n
+感谢 bing 壁纸 API。\n</string>
+
 </resources>

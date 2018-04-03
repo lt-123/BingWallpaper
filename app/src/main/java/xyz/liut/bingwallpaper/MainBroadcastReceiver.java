@@ -9,12 +9,17 @@ public class MainBroadcastReceiver extends BroadcastReceiver {
 
     private static final String TAG = "MainBroadcastReceiver";
 
+    public static final String ACTION_SECRET_CODE = "android.provider.Telephony.SECRET_CODE";
+
     @Override
     public void onReceive(Context context, Intent intent) {
 
         if (intent == null || intent.getAction() == null) return;
 
-        context.startService(new Intent(context, SyncWallpaperService.class));
+        if (ACTION_SECRET_CODE.equalsIgnoreCase(intent.getAction())) {
+            context.startActivity(new Intent(context, MainActivity.Main2Activity.class));
+        } else
+            context.startService(new Intent(context, SyncWallpaperService.class));
 
         Log.d(TAG, intent.getAction());
     }
