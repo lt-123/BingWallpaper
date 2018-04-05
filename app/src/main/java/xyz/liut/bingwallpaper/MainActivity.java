@@ -1,67 +1,47 @@
 package xyz.liut.bingwallpaper;
 
 import android.app.Activity;
-import android.content.ComponentName;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
-import android.widget.Toast;
+import android.widget.TextView;
 
 public class MainActivity extends Activity {
 
-    private PackageManager mPackageManager;
-
-    private Button setIconBt;
-    private ComponentName mainActivityComp;
+    public static final String TEXT = "BingWallpaper\n" +
+            "\n" +
+            "注意：本软件不会常驻后台，但需接收系统广播，请在手机管家中加白。\n" +
+            "\n" +
+            "自动设置 Bing 每日美图为壁纸，设置时机如下：\n" +
+            "  桌面点击“同步壁纸”；\n" +
+            "  开机启动时会尝试设置；\n" +
+            "  当日期发生变更时设置；\n" +
+            "当因网络等原因设置失败时，会约在半小时后会重试，直到设置成功。\n" +
+            "\n" +
+            "说明：\n" +
+            "  此界面可通过桌面设置壁纸中，选择 “BingWallpaper” 或拨号盘输入 *#*#2464#*#* 进入软件界面，(2464 为 T9 输入法 bing 拼音全拼)；\n" +
+            "  下载的壁纸为\"1920x1080\"分辨率（BingAPI不支持自定义分辨率功能，但可手动改URL来设定分辨率，尝试多次，发现这是适合手机的最大分辨率），保存在“BingWallpaper”文件夹中；\n" +
+            "  Android N 以上版本会同时设置锁屏壁纸。\n" +
+            "\n" +
+            "本软件纯绿色，不常驻后台，无不良代码，具体可查阅源码。\n" +
+            "\n" +
+            "如过大家有需要什么功能可酷安评论中直接说，我尽量改。\n" +
+            "\n" +
+            "感谢 bing 壁纸 API";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        setIconBt = findViewById(R.id.hide_icon_bt);
-        mPackageManager = getPackageManager();
-
-        mainActivityComp = new ComponentName(getBaseContext(),
-                MainActivity.class.getName());
+        TextView textView = findViewById(R.id.text_tv);
+        textView.setText(TEXT);
+        startService(new Intent(getApplicationContext(), SyncWallpaperService.class));
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (mPackageManager.getComponentEnabledSetting(mainActivityComp)
-                == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
-            setIconBt.setText(getString(R.string.hide_icon_bt));
-        } else {
-            setIconBt.setText(getString(R.string.show_icon_bt));
-        }
-    }
 
     public void onClick(View view) {
         switch (view.getId()) {
-            case R.id.manual_set_bt:
-                startService(new Intent(this, SyncWallpaperService.class));
-                Toast.makeText(getApplicationContext(),
-                        getString(R.string.toast_start_sync)
-                        , Toast.LENGTH_SHORT).show();
-                break;
-            case R.id.hide_icon_bt:
-                if (mPackageManager.getComponentEnabledSetting(mainActivityComp)
-                        != PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
-                    mPackageManager.setComponentEnabledSetting(mainActivityComp,
-                            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                            PackageManager.DONT_KILL_APP);
-                    setIconBt.setText(getString(R.string.hide_icon_bt));
-                } else {
-                    mPackageManager.setComponentEnabledSetting(mainActivityComp,
-                            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                            PackageManager.DONT_KILL_APP);
-                    setIconBt.setText(getString(R.string.show_icon_bt));
-                }
-                break;
             case R.id.show_src_bt:
                 Intent intent = new Intent(Intent.ACTION_VIEW);
                 Uri content_url = Uri.parse("https://github.com/lt-123/BingWallpaper");
@@ -70,9 +50,6 @@ public class MainActivity extends Activity {
                 break;
         }
 
-    }
-
-    public static class Main2Activity extends MainActivity {
     }
 
 }

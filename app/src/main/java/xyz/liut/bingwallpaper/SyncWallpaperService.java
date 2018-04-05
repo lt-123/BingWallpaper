@@ -8,7 +8,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
+import android.widget.Toast;
 
 import org.json.JSONObject;
 
@@ -27,12 +30,21 @@ public class SyncWallpaperService extends IntentService {
 
     private static final String BING_WALLPAPER_API = "https://www.bing.com/HPImageArchive.aspx?format=js&n=1";
 
+    private Handler handler;
+
     public SyncWallpaperService() {
         super("SyncWallpaperService");
     }
 
     public SyncWallpaperService(String name) {
         super(name);
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        handler = new MyHandler(getApplicationContext());
     }
 
     @Override
@@ -60,6 +72,8 @@ public class SyncWallpaperService extends IntentService {
                     .replace("1920x1080", "1080x1920");
             Log.d(TAG, "jpgUrl: " + jpgUrl);
 
+            showToastMsg("获取URL成功，开始下载");
+
             String urls[] = jpgUrl.split("/");
 
             HttpURLConnection wallpaperConn = (HttpURLConnection) new URL("https://cn.bing.com" + jpgUrl).openConnection();
@@ -85,14 +99,14 @@ public class SyncWallpaperService extends IntentService {
                 } else
                     WallpaperManager.getInstance(getApplicationContext()).setStream(new FileInputStream(jpgFile));
                 result = true;
+                showToastMsg("设置成功，壁纸已保存");
             } else {
                 Log.e(TAG, "下载壁纸失败");
+                jpgFile.delete();
             }
-
-            Log.d(TAG, "下载完成--" + jpgFile.length());
-
         } catch (Exception e) {
             e.printStackTrace();
+            showToastMsg("壁纸设置失败：" + e.getMessage());
         }
 
         if (!result) {
@@ -109,15 +123,36 @@ public class SyncWallpaperService extends IntentService {
                         System.currentTimeMillis() + 1000L * 30,
                         1000L * 10,
                         pi);
-                Log.e(TAG, "设置壁纸失败，约半小时后重试");
+                Log.e(TAG, "设置壁纸失败，约半小时后自动重试");
+                showToastMsg("设置壁纸失败，约半小时后自动重试");
             }
 
-        } else {
-            Log.d(TAG, "设置壁纸成功");
         }
 
 
     }
 
+    private void showToastMsg(String msg) {
+        Message message = handler.obtainMessage();
+        message.obj = msg;
+        handler.sendMessage(message);
+    }
+
+    private static class MyHandler extends Handler {
+
+        private Context context;
+
+        private MyHandler(Context context) {
+            this.context = context;
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            if (msg != null && msg.obj != null && msg.obj instanceof String) {
+                Toast.makeText(context, (String) (msg.obj), Toast.LENGTH_SHORT).show();
+            }
+        }
+
+    }
 
 }

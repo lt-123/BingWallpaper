@@ -7,30 +7,10 @@
     tools:context=".MainActivity">
 
     <Button
-        android:id="@+id/manual_set_bt"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:onClick="onClick"
-        android:text="@string/manual_set_bt" />
-
-    <Button
-        android:id="@+id/hide_icon_bt"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:layout_marginLeft="8dp"
-        android:layout_marginRight="8dp"
-        android:onClick="onClick"
-        android:text="@string/hide_icon_bt" />
-
-    <Button
         android:id="@+id/show_src_bt"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:layout_marginLeft="8dp"
-        android:layout_marginRight="8dp"
+        android:layout_margin="8dp"
         android:onClick="onClick"
         android:text="@string/show_src_bt" />
 
@@ -39,12 +19,12 @@
         android:layout_height="match_parent">
 
         <TextView
+            android:id="@+id/text_tv"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="12dp"
             android:background="#1666"
             android:padding="6dp"
-            android:text="@string/text"
             android:textColor="#000"
             android:textSize="16sp" />
     </ScrollView>

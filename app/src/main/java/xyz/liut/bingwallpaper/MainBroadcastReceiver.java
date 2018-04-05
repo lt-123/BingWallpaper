@@ -17,7 +17,7 @@ public class MainBroadcastReceiver extends BroadcastReceiver {
         if (intent == null || intent.getAction() == null) return;
 
         if (ACTION_SECRET_CODE.equalsIgnoreCase(intent.getAction())) {
-            context.startActivity(new Intent(context, MainActivity.Main2Activity.class));
+            context.startActivity(new Intent(context, MainActivity.class));
         } else
             context.startService(new Intent(context, SyncWallpaperService.class));
 
