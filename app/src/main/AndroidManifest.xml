@@ -27,8 +27,7 @@
         <activity
             android:name=".ManualSetActivity"
             android:excludeFromRecents="true"
-            android:label="@string/manual_set_label"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen">
+            android:label="@string/manual_set_label">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
