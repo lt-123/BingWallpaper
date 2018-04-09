@@ -25,6 +25,8 @@ public class MainBroadcastReceiver extends BroadcastReceiver {
             default:
                 context.startService(new Intent(context, SyncWallpaperService.class));
                 break;
+
+
         }
 
     }
