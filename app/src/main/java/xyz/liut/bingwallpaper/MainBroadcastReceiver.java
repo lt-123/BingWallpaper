@@ -16,12 +16,17 @@ public class MainBroadcastReceiver extends BroadcastReceiver {
 
         if (intent == null || intent.getAction() == null) return;
 
-        if (ACTION_SECRET_CODE.equalsIgnoreCase(intent.getAction())) {
-            context.startActivity(new Intent(context, MainActivity.class));
-        } else
-            context.startService(new Intent(context, SyncWallpaperService.class));
-
         Log.d(TAG, intent.getAction());
+
+        switch (intent.getAction()) {
+            case ACTION_SECRET_CODE:
+                context.startActivity(new Intent(context, MainActivity.class));
+                break;
+            default:
+                context.startService(new Intent(context, SyncWallpaperService.class));
+                break;
+        }
+
     }
 
 }
