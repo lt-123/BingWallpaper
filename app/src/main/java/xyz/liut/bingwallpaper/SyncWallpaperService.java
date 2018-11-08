@@ -6,10 +6,11 @@ import android.app.PendingIntent;
 import android.app.WallpaperManager;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Rect;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.Message;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -44,13 +45,12 @@ public class SyncWallpaperService extends IntentService {
     public void onCreate() {
         super.onCreate();
 
-        handler = new MyHandler(getApplicationContext());
+        handler = new Handler(Looper.getMainLooper());
     }
 
     @Override
     protected void onHandleIntent(Intent intent) {
-
-        Log.e(TAG, "onHandleIntent: start ====");
+        Log.d(TAG, "onHandleIntent: start ====");
 
         boolean result = false;
 
@@ -94,14 +94,16 @@ public class SyncWallpaperService extends IntentService {
             if (fileLength == jpgFile.length()) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     WallpaperManager.getInstance(getApplicationContext()).setStream(
-                            new FileInputStream(jpgFile), null, true,
+                            new FileInputStream(jpgFile), new Rect(0, 0, 1080, 1920), true,
                             WallpaperManager.FLAG_LOCK | WallpaperManager.FLAG_SYSTEM);
-                } else
+                    showToastMsg("设置成功，壁纸已保存");
+                } else {
                     WallpaperManager.getInstance(getApplicationContext()).setStream(new FileInputStream(jpgFile));
+                    showToastMsg("设置成功，壁纸已保存 < N");
+                }
                 result = true;
-                showToastMsg("设置成功，壁纸已保存");
             } else {
-                Log.e(TAG, "下载壁纸失败");
+                showToastMsg("下载壁纸失败");
                 jpgFile.delete();
             }
         } catch (Exception e) {
@@ -123,7 +125,6 @@ public class SyncWallpaperService extends IntentService {
                         System.currentTimeMillis() + 1000L * 30,
                         1000L * 10,
                         pi);
-                Log.e(TAG, "设置壁纸失败，约半小时后自动重试");
                 showToastMsg("设置壁纸失败，约半小时后自动重试");
             }
 
@@ -132,27 +133,10 @@ public class SyncWallpaperService extends IntentService {
 
     }
 
-    private void showToastMsg(String msg) {
-        Message message = handler.obtainMessage();
-        message.obj = msg;
-        handler.sendMessage(message);
+    private void showToastMsg(final String msg) {
+        Log.d(TAG, msg);
+        handler.post(() -> Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show());
     }
 
-    private static class MyHandler extends Handler {
-
-        private Context context;
-
-        private MyHandler(Context context) {
-            this.context = context;
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            if (msg != null && msg.obj != null && msg.obj instanceof String) {
-                Toast.makeText(context, (String) (msg.obj), Toast.LENGTH_SHORT).show();
-            }
-        }
-
-    }
 
 }

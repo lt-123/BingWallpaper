@@ -4,7 +4,7 @@ android {
     compileSdkVersion 28
     defaultConfig {
         applicationId "xyz.liut.bingwallpaper"
-        minSdkVersion 19
+        minSdkVersion 21
         //noinspection ExpiredTargetSdkVersion
         targetSdkVersion 22
         versionCode 1
@@ -21,6 +21,11 @@ android {
 
     lintOptions {
         disable 'GoogleAppIndexingWarning'
+    }
+
+    compileOptions {
+        sourceCompatibility = '1.8'
+        targetCompatibility = '1.8'
     }
 
 
