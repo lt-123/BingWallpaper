@@ -1,10 +1,10 @@
 package xyz.liut.bingwallpaper;
 
-import android.app.AlarmManager;
 import android.app.IntentService;
-import android.app.PendingIntent;
 import android.app.WallpaperManager;
-import android.content.Context;
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Rect;
 import android.os.Build;
@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Calendar;
 
 public class SyncWallpaperService extends IntentService {
 
@@ -111,23 +112,45 @@ public class SyncWallpaperService extends IntentService {
             showToastMsg("壁纸设置失败：" + e.getMessage());
         }
 
-        if (!result) {
-            AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-            if (am != null) {
-                PendingIntent pi = PendingIntent.getService(
-                        getApplicationContext(),
-                        1123,
-                        new Intent(getApplicationContext(), SyncWallpaperService.class),
-                        PendingIntent.FLAG_UPDATE_CURRENT);
+        JobScheduler scheduler = (JobScheduler) getApplication().getSystemService(JOB_SCHEDULER_SERVICE);
+        if (scheduler == null) {
+            showToastMsg("不支持自动同步壁纸");
+            return;
+        }
+        scheduler.cancelAll();
 
-                am.setWindow(
-                        AlarmManager.RTC,
-                        System.currentTimeMillis() + 1000L * 30,
-                        1000L * 10,
-                        pi);
-                showToastMsg("设置壁纸失败，约半小时后自动重试");
+        ComponentName componentName = new ComponentName(getApplication(), AlarmJob.class.getName());
+        JobInfo.Builder builder = new JobInfo.Builder(1123, componentName)
+                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
+//                .setPrefetch(true);   // 开启会崩溃？
+        if (result) {
+            Calendar now = Calendar.getInstance();
+            Log.d(TAG, "time " + now.getTime());
+            Calendar targetTime = (Calendar) now.clone();
+            targetTime.set(Calendar.HOUR_OF_DAY, 0);
+            targetTime.set(Calendar.MINUTE, 0);
+            targetTime.set(Calendar.SECOND, 0);
+            targetTime.set(Calendar.MILLISECOND, 0);
+
+            if (targetTime.before(now)) {
+                targetTime.add(Calendar.DATE, 1);
             }
+            long latencyTime = targetTime.getTimeInMillis() - now.getTimeInMillis();
+            builder.setMinimumLatency(latencyTime).setOverrideDeadline(latencyTime + 1000L * 60 * 30);
+        } else {
+            builder.setMinimumLatency(1000L * 60 * 30).setOverrideDeadline(1000L * 60 * 30 * 2);
+            showToastMsg("设置壁纸失败，半个多小时后自动重试");
+        }
 
+        JobInfo jobInfo = builder.build();
+
+        Log.d(TAG, "jonInfo --> " + jobInfo.getMinLatencyMillis() / 60 / 1000L);
+
+        int scheduleResult = scheduler.schedule(jobInfo);
+        if (scheduleResult == JobScheduler.RESULT_SUCCESS) {
+            Log.i(TAG, "定时ok");
+        } else {
+            showToastMsg("-不支持自动同步壁纸-");
         }
 
 

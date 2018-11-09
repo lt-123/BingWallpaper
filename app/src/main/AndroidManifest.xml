@@ -8,7 +8,6 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
-        android:name=".App"
         android:allowBackup="true"
         android:icon="@mipmap/ic_bing"
         android:label="@string/app_name"
@@ -38,6 +37,10 @@
         </activity>
 
         <service android:name=".SyncWallpaperService" />
+
+        <service
+            android:name=".AlarmJob"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <receiver
             android:name=".MainBroadcastReceiver"
