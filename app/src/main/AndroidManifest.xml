@@ -10,7 +10,7 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_bing"
         android:label="@string/app_name"
         android:supportsRtl="true"
@@ -18,7 +18,8 @@
 
         <activity
             android:name=".MainActivity"
-            android:excludeFromRecents="true">
+            android:excludeFromRecents="true"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.SET_WALLPAPER" />
 
@@ -45,9 +46,7 @@
             android:name=".AlarmJob"
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
-        <receiver
-            android:name=".MainBroadcastReceiver"
-            android:exported="true">
+        <receiver android:name=".MainBroadcastReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
 

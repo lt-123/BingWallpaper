@@ -16,13 +16,13 @@
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_margin="12dp">
 
         <TextView
             android:id="@+id/text_tv"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="12dp"
             android:background="#1666"
             android:padding="6dp"
             android:textColor="#000"
