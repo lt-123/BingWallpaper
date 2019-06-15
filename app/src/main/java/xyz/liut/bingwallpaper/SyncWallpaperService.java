@@ -24,20 +24,37 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
 public class SyncWallpaperService extends IntentService {
 
     private static final String TAG = "SyncWallpaperService";
 
+    /**
+     * API URL
+     */
     private static final String BING_WALLPAPER_API = "https://www.bing.com/HPImageArchive.aspx?format=js&n=1";
+
+    /**
+     * 连接超时时间
+     */
+    public static final int CONNECT_TIMEOUT = 3 * 1000;
+    /**
+     * 读取超时时间
+     */
+    public static final int READ_TIMEOUT = 8 * 1000;
 
     private Handler handler;
 
+    @SuppressWarnings("unused")
     public SyncWallpaperService() {
         super("SyncWallpaperService");
     }
 
+    @SuppressWarnings("unused")
     public SyncWallpaperService(String name) {
         super(name);
     }
@@ -56,15 +73,19 @@ public class SyncWallpaperService extends IntentService {
         boolean result = false;
 
         try {
-
             String wallpaperPath = Environment.getExternalStorageDirectory() + File.separator + "bingWallpaper";
 
             File fileDir = new File(wallpaperPath);
             if (!fileDir.exists()) {
+                //noinspection ResultOfMethodCallIgnored
                 fileDir.mkdirs();
             }
 
+            // ----------- 获取 URL
+
             HttpURLConnection urlConnection = (HttpURLConnection) new URL(BING_WALLPAPER_API).openConnection();
+            urlConnection.setConnectTimeout(CONNECT_TIMEOUT);
+            urlConnection.setReadTimeout(READ_TIMEOUT);
             String resp = new BufferedReader(new InputStreamReader(urlConnection.getInputStream())).readLine();
             String jpgUrl = new JSONObject(resp)
                     .getJSONArray("images")
@@ -75,12 +96,16 @@ public class SyncWallpaperService extends IntentService {
 
             showToastMsg("获取URL成功，开始下载");
 
-            String urls[] = jpgUrl.split("/");
-
+            // ----------- 保存文件
             HttpURLConnection wallpaperConn = (HttpURLConnection) new URL("https://cn.bing.com" + jpgUrl).openConnection();
+            wallpaperConn.setConnectTimeout(CONNECT_TIMEOUT);
+            wallpaperConn.setReadTimeout(READ_TIMEOUT);
+
             int fileLength = wallpaperConn.getContentLength();
 
-            File jpgFile = new File(wallpaperPath + File.separator + urls[urls.length - 1]);
+            String fileName = wallpaperPath + File.separator + new SimpleDateFormat("yyyy-MM-dd", Locale.CHINESE).format(new Date()) + ".jpg";
+
+            File jpgFile = new File(fileName);
             Log.i(TAG, "jpgFile: " + jpgFile.getPath());
 
             FileOutputStream os = new FileOutputStream(jpgFile);
@@ -91,6 +116,8 @@ public class SyncWallpaperService extends IntentService {
             while ((len = is.read(buffer)) != -1) {
                 os.write(buffer, 0, len);
             }
+
+            // ---------- 设置壁纸
 
             if (fileLength == jpgFile.length()) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -105,12 +132,15 @@ public class SyncWallpaperService extends IntentService {
                 result = true;
             } else {
                 showToastMsg("下载壁纸失败");
+                //noinspection ResultOfMethodCallIgnored
                 jpgFile.delete();
             }
         } catch (Exception e) {
             e.printStackTrace();
             showToastMsg("壁纸设置失败：" + e.getMessage());
         }
+
+        // --------------- 定时
 
         JobScheduler scheduler = (JobScheduler) getApplication().getSystemService(JOB_SCHEDULER_SERVICE);
         if (scheduler == null) {
