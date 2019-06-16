@@ -6,8 +6,8 @@ import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.content.ComponentName;
 import android.content.Intent;
-import android.graphics.Rect;
-import android.os.Build;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
@@ -18,8 +18,8 @@ import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -120,15 +120,7 @@ public class SyncWallpaperService extends IntentService {
             // ---------- 设置壁纸
 
             if (fileLength == jpgFile.length()) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    WallpaperManager.getInstance(getApplicationContext()).setStream(
-                            new FileInputStream(jpgFile), new Rect(0, 0, 1080, 1920), true,
-                            WallpaperManager.FLAG_LOCK | WallpaperManager.FLAG_SYSTEM);
-                    showToastMsg("设置成功，壁纸已保存");
-                } else {
-                    WallpaperManager.getInstance(getApplicationContext()).setStream(new FileInputStream(jpgFile));
-                    showToastMsg("设置成功，壁纸已保存 < N");
-                }
+                setFile2Wallpaper(jpgFile);
                 result = true;
             } else {
                 showToastMsg("下载壁纸失败");
@@ -184,6 +176,29 @@ public class SyncWallpaperService extends IntentService {
         }
 
 
+    }
+
+    /**
+     * 设置壁纸
+     *
+     * @param jpgFile -
+     * @throws IOException -
+     */
+    private void setFile2Wallpaper(File jpgFile) throws IOException {
+
+        final int screenWidth = ScreenUtils.getScreenWidth(getApplicationContext());
+        final int screenHeight = ScreenUtils.getScreenHeight(getApplicationContext());
+
+        final WallpaperManager wallpaperManager = WallpaperManager.getInstance(getApplicationContext());
+        wallpaperManager.suggestDesiredDimensions(screenWidth, screenHeight);
+
+        // 4.缩放图片。
+        Bitmap bitmap = BitmapFactory.decodeFile(jpgFile.getPath());
+
+        // 5.设为壁纸。
+        wallpaperManager.setBitmap(bitmap);
+
+        showToastMsg("设置成功，壁纸已保存");
     }
 
     private void showToastMsg(final String msg) {
