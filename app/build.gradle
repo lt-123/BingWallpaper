@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: "xyz.liut.release"
 
 android {
     compileSdkVersion 28
