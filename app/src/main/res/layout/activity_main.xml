@@ -1,32 +1,99 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     tools:context=".MainActivity">
 
-    <Button
-        android:id="@+id/show_src_bt"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:onClick="onClick"
-        android:text="@string/show_src_bt" />
+        android:orientation="vertical">
 
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_margin="12dp">
+        <LinearLayout
+            android:id="@+id/ll_source"
+            style="@style/SettingItem"
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/text_tv"
+            <TextView
+                style="@style/SettingItemTitle"
+                android:text="@string/wallpaper_source" />
+
+            <TextView
+                android:id="@+id/tv_source"
+                style="@style/SettingItemSubTitle"
+                android:text="@string/bing_search" />
+
+        </LinearLayout>
+
+        <View style="@style/SettingItemLine" />
+
+
+        <LinearLayout
+            android:id="@+id/ll_frequency"
+            style="@style/SettingItem"
+            android:orientation="vertical">
+
+            <TextView
+                style="@style/SettingItemTitle"
+                android:text="@string/update_frequency" />
+
+            <TextView
+                android:id="@+id/tv_frequency"
+                style="@style/SettingItemSubTitle"
+                android:text="@string/every_day" />
+
+        </LinearLayout>
+
+        <View style="@style/SettingItemLine" />
+
+
+        <LinearLayout
+            android:id="@+id/ll_save_path"
+            style="@style/SettingItem"
+            android:orientation="vertical">
+
+            <TextView
+                style="@style/SettingItemTitle"
+                android:text="@string/save_path" />
+
+            <TextView
+                android:id="@+id/tv_save_path"
+                style="@style/SettingItemSubTitle"
+                android:text="@string/no_save" />
+
+        </LinearLayout>
+
+        <View style="@style/SettingItemLine" />
+
+
+        <LinearLayout
+            android:id="@+id/ll_set_lock_screen"
+            style="@style/SettingItem"
+            android:orientation="vertical">
+
+            <TextView
+                style="@style/SettingItemTitle"
+                android:text="@string/set_lock_screen" />
+
+            <TextView
+                android:id="@+id/tv_set_lock_screen"
+                style="@style/SettingItemSubTitle"
+                android:text="@string/set_lock_screen" />
+
+        </LinearLayout>
+
+        <View style="@style/SettingItemLine" />
+
+        <Button
+            android:id="@+id/bt_setup_now"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#1666"
-            android:padding="6dp"
-            android:textColor="#000"
-            android:textSize="16sp" />
-    </ScrollView>
+            android:layout_margin="16dp"
+            android:text="@string/setup_now" />
 
-</LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>
