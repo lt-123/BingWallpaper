@@ -1,6 +1,10 @@
 package xyz.liut.bingwallpaper.engine;
 
-import android.support.annotation.NonNull;
+import android.content.Context;
+
+import androidx.annotation.NonNull;
+
+import xyz.liut.bingwallpaper.bean.SourceBean;
 
 /**
  * Engine 工厂
@@ -10,21 +14,33 @@ import android.support.annotation.NonNull;
  */
 public class EngineFactory {
 
+    private final String path;
+    private final IWallpaperEngine.FileNameFormat fileNameFormat;
+
+    public static EngineFactory getDefault(Context context) {
+        return new EngineFactory(context.getExternalCacheDir().toString(), TimeFileNameFormat.getInstance());
+    }
+
+    public EngineFactory(String path, IWallpaperEngine.FileNameFormat fileNameFormat) {
+        this.path = path;
+        this.fileNameFormat = fileNameFormat;
+    }
+
     /**
      * 根据名称获取引擎
      *
-     * @param name 名称
+     * @param bean 资源类
      * @return 引擎
      */
-    public static IWallpaperEngine getEngine(@NonNull String name) {
-        switch (name) {
+    public IWallpaperEngine getEngineBySourceBean(@NonNull SourceBean bean) {
+        switch (bean.getName()) {
             case BingWallpaperEngine.NAME:
-                return new BingWallpaperEngine();
+                return new BingWallpaperEngine(path, fileNameFormat);
             default:
-                return null;
-
+                return new DirectEngine(bean.getUrl(), path, fileNameFormat);
         }
     }
+
 
 }
 

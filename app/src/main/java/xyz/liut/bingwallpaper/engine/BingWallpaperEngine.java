@@ -1,8 +1,10 @@
 package xyz.liut.bingwallpaper.engine;
 
-import org.json.JSONObject;
+import android.util.Log;
 
-import java.io.File;
+import androidx.annotation.NonNull;
+
+import org.json.JSONObject;
 
 import xyz.liut.bingwallpaper.http.HttpClient;
 import xyz.liut.bingwallpaper.http.Method;
@@ -17,17 +19,25 @@ import xyz.liut.bingwallpaper.http.Response;
 public class BingWallpaperEngine implements IWallpaperEngine {
 
     public static final String NAME = "BingWallpaperEngine";
+    private static final String TAG = NAME;
 
     /**
      * bing
      */
-    private static final String BING_URL = "https://cn.bing.com";
+    public static final String BING_URL = "https://cn.bing.com";
 
     /**
      * API URL
      */
     private static final String BING_WALLPAPER_API = "https://www.bing.com/HPImageArchive.aspx?format=js&n=1";
 
+    private final String path;
+    private final IWallpaperEngine.FileNameFormat fileNameFormat;
+
+    public BingWallpaperEngine(@NonNull String path, @NonNull FileNameFormat fileNameFormat) {
+        this.path = path;
+        this.fileNameFormat = fileNameFormat;
+    }
 
     @Override
     public String engineName() {
@@ -40,9 +50,9 @@ public class BingWallpaperEngine implements IWallpaperEngine {
     }
 
     @Override
-    public void setWallpaper(String path, FileNameFormat fileNameFormat, Callback callback) {
+    public void downLoadWallpaper(@NonNull Callback callback) {
+        Log.d(TAG, "setWallpaper() called with: path = [" + path + "]");
         try {
-            String fileName = path + File.separator + fileNameFormat.fileName();
             // ----------- 获取 URL
             Response<String> response = HttpClient.getInstance().doRequest(Method.get, BING_WALLPAPER_API);
             if (response.isSuccessful()) {
@@ -55,13 +65,9 @@ public class BingWallpaperEngine implements IWallpaperEngine {
 
                 callback.onMessage("获取URL成功，开始下载");
 
-                // 下载文件
-                Response<File> fileResp = HttpClient.getInstance().download(BING_URL + jpgUrl, fileName);
-                if (fileResp.isSuccessful()) {
-                    callback.onSucceed(fileResp.getBody());
-                } else {
-                    callback.onFailed("下载壁纸失败");
-                }
+                new DirectEngine(BING_URL + jpgUrl, path, fileNameFormat).downLoadWallpaper(callback);
+            } else {
+                callback.onFailed("下载壁纸失败: " + response.getErrorMessage());
             }
 
         } catch (Exception e) {

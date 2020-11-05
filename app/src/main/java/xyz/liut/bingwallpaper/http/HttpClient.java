@@ -1,11 +1,12 @@
 package xyz.liut.bingwallpaper.http;
 
-import java.io.BufferedReader;
+import android.util.Log;
+
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -17,6 +18,8 @@ import java.net.URL;
  * 2020/11/2
  */
 public final class HttpClient {
+
+    private static final String TAG = "HttpClient";
 
     /**
      * 连接超时时间
@@ -42,9 +45,13 @@ public final class HttpClient {
             urlConnection.setConnectTimeout(CONNECT_TIMEOUT);
             urlConnection.setReadTimeout(READ_TIMEOUT);
             response.setResponseCode(urlConnection.getResponseCode());
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()))) {
-                String resp = reader.readLine();
-                response.setBody(resp);
+            response.setHeaders(urlConnection.getHeaderFields());
+            try (InputStream is = urlConnection.getInputStream(); ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+                byte[] buffer = new byte[1024];
+                int len;
+                while ((len = is.read(buffer)) != -1)
+                    os.write(buffer, 0, len);
+                response.setBody(os.toString());
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -57,6 +64,8 @@ public final class HttpClient {
     }
 
     public Response<File> download(String url, String fileName) {
+        Log.d(TAG, "download() called with: url = [" + url + "], fileName = [" + fileName + "]");
+
         Response<File> response = new Response<>();
 
         File file = new File(fileName);
@@ -84,6 +93,7 @@ public final class HttpClient {
                 urlConnection.setConnectTimeout(CONNECT_TIMEOUT);
                 urlConnection.setReadTimeout(READ_TIMEOUT);
                 response.setResponseCode(urlConnection.getResponseCode());
+                response.setHeaders(urlConnection.getHeaderFields());
 
                 int fileLength = urlConnection.getContentLength();
 
@@ -93,12 +103,13 @@ public final class HttpClient {
                     while ((len = is.read(buffer)) != -1)
                         os.write(buffer, 0, len);
 
-                    if (file.length() == fileLength)
+                    if (file.length() == fileLength) {
                         response.setBody(file);
-                    else {
+                        Log.d(TAG, "download: fileLength = " + fileLength);
+                    } else {
                         //noinspection ResultOfMethodCallIgnored
                         file.delete();
-                        response.setErrorMessage("文件下载出错");
+                        response.setErrorMessage("文件下载出错: " + url);
                         response.setResponseCode(-1);
                     }
                 }
@@ -107,7 +118,7 @@ public final class HttpClient {
                 if (response.getResponseCode() != 0) {
                     response.setResponseCode(-1);
                 }
-                response.setErrorMessage("下载出错");
+                response.setErrorMessage("下载出错: " + url);
             }
 
         }

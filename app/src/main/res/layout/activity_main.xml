@@ -52,39 +52,125 @@
         <LinearLayout
             android:id="@+id/ll_save_path"
             style="@style/SettingItem"
-            android:orientation="vertical">
+            android:orientation="horizontal">
 
-            <TextView
-                style="@style/SettingItemTitle"
-                android:text="@string/save_path" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/tv_save_path"
-                style="@style/SettingItemSubTitle"
-                android:text="@string/no_save" />
+                <TextView
+                    style="@style/SettingItemTitle"
+                    android:text="@string/save_path" />
+
+                <TextView
+                    android:id="@+id/tv_save_path"
+                    style="@style/SettingItemSubTitle"
+                    android:text="@string/no_save" />
+            </LinearLayout>
+
+            <Switch
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center" />
 
         </LinearLayout>
+
+        <View style="@style/SettingItemLine" />
+
+        <LinearLayout
+            android:id="@+id/ll_set_lock_screen"
+            style="@style/SettingItem"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/SettingItemTitle"
+                    android:text="@string/set_lock_screen" />
+
+                <TextView
+                    android:id="@+id/tv_set_lock_screen"
+                    style="@style/SettingItemSubTitle"
+                    android:text="@string/set_lock_screen" />
+            </LinearLayout>
+
+            <Switch
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center" />
+
+        </LinearLayout>
+
 
         <View style="@style/SettingItemLine" />
 
 
         <LinearLayout
-            android:id="@+id/ll_set_lock_screen"
+            android:id="@+id/ll_show_manual"
             style="@style/SettingItem"
-            android:orientation="vertical">
+            android:orientation="horizontal">
 
-            <TextView
-                style="@style/SettingItemTitle"
-                android:text="@string/set_lock_screen" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/tv_set_lock_screen"
-                style="@style/SettingItemSubTitle"
-                android:text="@string/set_lock_screen" />
+                <TextView
+                    style="@style/SettingItemTitle"
+                    android:text="@string/show_manual" />
+
+                <TextView
+                    android:id="@+id/tv_show_manual"
+                    style="@style/SettingItemSubTitle"
+                    android:text="@string/hide" />
+            </LinearLayout>
+
+            <Switch
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center" />
 
         </LinearLayout>
 
         <View style="@style/SettingItemLine" />
+
+        <LinearLayout
+            android:id="@+id/ll_hide"
+            style="@style/SettingItem"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/SettingItemTitle"
+                    android:text="@string/hide_me" />
+
+                <TextView
+                    android:id="@+id/tv_hide"
+                    style="@style/SettingItemSubTitle"
+                    android:text="@string/no_hide" />
+            </LinearLayout>
+
+            <Switch
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center" />
+
+        </LinearLayout>
+
+        <View style="@style/SettingItemLine" />
+
 
         <Button
             android:id="@+id/bt_setup_now"
@@ -92,6 +178,13 @@
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
             android:text="@string/setup_now" />
+
+        <Button
+            android:id="@+id/bt_clear"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:text="@string/clear_wallpaper" />
 
 
     </LinearLayout>

@@ -17,5 +17,17 @@
     <string name="add_source">添加源</string>
     <string name="about">关于</string>
     <string name="see_source_code">查看源码</string>
+    <string name="ok">好</string>
+    <string name="hide_me">隐藏桌面图表</string>
+    <string name="no_hide">不隐藏</string>
+    <string name="show_manual">显示手动切换桌面图标</string>
+    <string name="hide">隐藏</string>
+    <string name="clear_wallpaper">清除壁纸</string>
+    <string name="please_input_name">请输入名称(必须且不可重复)</string>
+    <string name="please_input_url">请输入url</string>
+    <string name="add">添加</string>
+    <string name="please_input_desc">请输入描述(可选)</string>
+    <string name="test">检测</string>
+    <string name="add_source_doc">仅支持添加直链源, 名称随意但不可重复. 添加前请先检测, 检测结果会出现在下方, 结果满意再添加, 不然添加了也不能用</string>
 
 </resources>

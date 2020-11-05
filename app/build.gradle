@@ -31,15 +31,25 @@ android {
         targetCompatibility = '1.8'
     }
 
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
 
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'com.android.support:support-annotations:28.0.0'
-
-    testImplementation 'junit:junit:4.13'
+    //---- test -----
+    testImplementation 'org.robolectric:robolectric:4.4'
+    testImplementation 'javax.inject:javax.inject:1'
+    testImplementation 'junit:junit:4.13.1'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+
+    //---- provided -----
+    compileOnly "androidx.annotation:annotation:1.1.0"
+
+    //---- compile -----
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
 
 }

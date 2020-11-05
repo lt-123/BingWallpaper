@@ -1,72 +1,65 @@
 package xyz.liut.bingwallpaper;
 
-import android.app.IntentService;
+import android.app.Service;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.content.ComponentName;
 import android.content.Intent;
-import android.os.Handler;
-import android.os.Looper;
+import android.os.IBinder;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 import java.io.File;
 import java.util.Calendar;
 
-import xyz.liut.bingwallpaper.engine.BingWallpaperEngine;
+import xyz.liut.bingwallpaper.bean.SourceBean;
 import xyz.liut.bingwallpaper.engine.EngineFactory;
 import xyz.liut.bingwallpaper.engine.IWallpaperEngine;
-import xyz.liut.bingwallpaper.engine.TimeFileFormat;
 import xyz.liut.bingwallpaper.utils.ToastUtil;
 import xyz.liut.bingwallpaper.utils.WallpaperTool;
 
-public class SyncWallpaperService extends IntentService {
+public class SyncWallpaperService extends Service {
 
     private static final String TAG = "SyncWallpaperService";
 
-    private Handler handler;
-
-    @SuppressWarnings("unused")
-    public SyncWallpaperService() {
-        super("SyncWallpaperService");
-    }
-
-    @SuppressWarnings("unused")
-    public SyncWallpaperService(String name) {
-        super(name);
-    }
-
     @Override
-    public void onCreate() {
-        super.onCreate();
-
-        handler = new Handler(Looper.getMainLooper());
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        new Thread(this::syncWallpaper).start();
+        return super.onStartCommand(intent, flags, startId);
     }
 
-    @Override
-    protected void onHandleIntent(Intent intent) {
+    private void syncWallpaper() {
         Log.d(TAG, "onHandleIntent: start ====");
-
-        String path = getFilesDir().toString();
-        IWallpaperEngine.FileNameFormat format = new TimeFileFormat();
         final boolean isSave = false;
 
-        IWallpaperEngine engine = EngineFactory.getEngine(BingWallpaperEngine.NAME);
+        // 默认源
+        SourceBean defaultBean = SourceManager.getDefaultSource(this);
+
+        // 根据源获取引擎
+        IWallpaperEngine engine = EngineFactory.getDefault(this).getEngineBySourceBean(defaultBean);
+
         if (engine != null) {
-            engine.setWallpaper(path, format, new IWallpaperEngine.Callback() {
+            engine.downLoadWallpaper(new IWallpaperEngine.Callback() {
                 @Override
                 public void onSucceed(File file) {
-                    boolean ret = WallpaperTool.setFile2Wallpaper(SyncWallpaperService.this, file);
-                    if (ret) {
-                        ToastUtil.showToast(SyncWallpaperService.this, "设置壁纸成功");
-                    } else {
-                        ToastUtil.showToast(SyncWallpaperService.this, "设置壁纸失败");
-                    }
-                    if (!isSave) {
-                        //noinspection ResultOfMethodCallIgnored
-                        file.delete();
-                    }
+                    ToastUtil.showToast(SyncWallpaperService.this, file.toString());
 
-                    setJob(ret);
+                    try {
+                        WallpaperTool.setFile2Wallpaper(SyncWallpaperService.this, file, true);
+                        ToastUtil.showToast(SyncWallpaperService.this, "设置壁纸成功");
+                        setJob(true);
+
+                        if (!isSave) {
+                            //noinspection ResultOfMethodCallIgnored
+                            file.delete();
+                        } else {
+//                        file.renameTo()
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        ToastUtil.showToast(SyncWallpaperService.this, "不支持设置壁纸: " + e.getMessage());
+                    }
                 }
 
                 @Override
@@ -77,6 +70,7 @@ public class SyncWallpaperService extends IntentService {
                 @Override
                 public void onFailed(String msg) {
                     ToastUtil.showToast(SyncWallpaperService.this, msg);
+                    setJob(false);
                 }
             });
         } else {
@@ -134,6 +128,12 @@ public class SyncWallpaperService extends IntentService {
             ToastUtil.showToast(SyncWallpaperService.this, "-不支持自动同步壁纸-");
         }
 
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
     }
 
 

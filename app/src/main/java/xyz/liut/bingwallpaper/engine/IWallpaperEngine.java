@@ -1,6 +1,6 @@
 package xyz.liut.bingwallpaper.engine;
 
-import android.content.Context;
+import androidx.annotation.NonNull;
 
 import java.io.File;
 
@@ -26,7 +26,7 @@ public interface IWallpaperEngine {
     /**
      * 下载并设置壁纸
      */
-    void setWallpaper(String path, FileNameFormat fileNameFormat, Callback callback);
+    void downLoadWallpaper(@NonNull Callback callback);
 
     /**
      * 回调

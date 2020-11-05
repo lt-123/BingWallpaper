@@ -18,7 +18,6 @@
         android:allowBackup="false"
         android:icon="@mipmap/ic_bing"
         android:label="@string/app_name"
-        android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="false"
         android:usesCleartextTraffic="true"
         tools:ignore="UnusedAttribute">
@@ -50,6 +49,8 @@
         </activity>
 
         <activity android:name=".SourceListActivity" />
+
+        <activity android:name=".AddSourceActivity" />
 
         <activity android:name=".AboutActivity" />
 

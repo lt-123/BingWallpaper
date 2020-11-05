@@ -1,0 +1,24 @@
+package xyz.liut.bingwallpaper;
+
+import org.junit.Before;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowLog;
+
+/**
+ * RobolectricTestRunner
+ * <p>
+ * Create by liut on 2020/11/4
+ */
+
+@RunWith(RobolectricTestRunner.class)
+@Config(manifest = Config.NONE)
+public class BaseTest {
+
+    @Before
+    public void setUp() {
+        ShadowLog.stream = System.out;
+    }
+
+}
