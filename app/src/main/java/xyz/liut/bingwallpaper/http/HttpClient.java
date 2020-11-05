@@ -103,15 +103,15 @@ public final class HttpClient {
                     while ((len = is.read(buffer)) != -1)
                         os.write(buffer, 0, len);
 
-                    if (file.length() == fileLength) {
-                        response.setBody(file);
-                        Log.d(TAG, "download: fileLength = " + fileLength);
-                    } else {
-                        //noinspection ResultOfMethodCallIgnored
-                        file.delete();
-                        response.setErrorMessage("文件下载出错: " + url);
-                        response.setResponseCode(-1);
-                    }
+//                    if (file.length() == fileLength) {
+                    response.setBody(file);
+                    Log.d(TAG, "download: fileLength = " + fileLength);
+//                    } else {
+//                        //noinspection ResultOfMethodCallIgnored
+//                        file.delete();
+//                        response.setErrorMessage("文件下载出错: " + url);
+//                        response.setResponseCode(-1);
+//                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
