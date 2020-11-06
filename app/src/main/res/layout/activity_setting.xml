@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".MainActivity">
+    tools:context=".SettingActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -31,16 +31,16 @@
 
 
         <LinearLayout
-            android:id="@+id/ll_frequency"
+            android:id="@+id/ll_time"
             style="@style/SettingItem"
             android:orientation="vertical">
 
             <TextView
                 style="@style/SettingItemTitle"
-                android:text="@string/update_frequency" />
+                android:text="@string/update_time" />
 
             <TextView
-                android:id="@+id/tv_frequency"
+                android:id="@+id/tv_time"
                 style="@style/SettingItemSubTitle"
                 android:text="@string/every_day" />
 
@@ -71,6 +71,7 @@
             </LinearLayout>
 
             <Switch
+                android:id="@+id/sw_save"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center" />
@@ -101,6 +102,7 @@
             </LinearLayout>
 
             <Switch
+                android:id="@+id/sw_lock_screen"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center" />
@@ -133,6 +135,7 @@
             </LinearLayout>
 
             <Switch
+                android:id="@+id/sw_show_manual"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center" />
@@ -157,12 +160,13 @@
                     android:text="@string/hide_me" />
 
                 <TextView
-                    android:id="@+id/tv_hide"
+                    android:id="@+id/tv_show_main"
                     style="@style/SettingItemSubTitle"
                     android:text="@string/no_hide" />
             </LinearLayout>
 
             <Switch
+                android:id="@+id/sw_show_main"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center" />

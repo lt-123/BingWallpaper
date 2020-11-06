@@ -16,12 +16,31 @@ import java.util.Calendar;
 import xyz.liut.bingwallpaper.bean.SourceBean;
 import xyz.liut.bingwallpaper.engine.EngineFactory;
 import xyz.liut.bingwallpaper.engine.IWallpaperEngine;
+import xyz.liut.bingwallpaper.utils.SpTool;
 import xyz.liut.bingwallpaper.utils.ToastUtil;
 import xyz.liut.bingwallpaper.utils.WallpaperTool;
 
-public class SyncWallpaperService extends Service {
+/**
+ * 同步壁纸
+ */
+public class SyncWallpaperService extends Service implements IWallpaperEngine.Callback {
 
     private static final String TAG = "SyncWallpaperService";
+
+    /**
+     * 失败重试次数
+     */
+    private volatile int retryTime;
+
+    private volatile IWallpaperEngine engine;
+
+    private SpTool spTool;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        spTool = SpTool.getDefault(this);
+    }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -37,46 +56,65 @@ public class SyncWallpaperService extends Service {
         SourceBean defaultBean = SourceManager.getDefaultSource(this);
 
         // 根据源获取引擎
-        IWallpaperEngine engine = EngineFactory.getDefault(this).getEngineBySourceBean(defaultBean);
+        engine = EngineFactory.getDefault(this).getEngineBySourceBean(defaultBean);
 
-        if (engine != null) {
-            engine.downLoadWallpaper(new IWallpaperEngine.Callback() {
-                @Override
-                public void onSucceed(File file) {
-                    ToastUtil.showToast(SyncWallpaperService.this, file.toString());
+        // 开始下载
+        engine.downLoadWallpaper(this);
+    }
 
-                    try {
-                        WallpaperTool.setFile2Wallpaper(SyncWallpaperService.this, file, true);
-                        ToastUtil.showToast(SyncWallpaperService.this, "设置壁纸成功");
-                        setJob(true);
+    @Override
+    public void onSucceed(File file) {
+        retryTime = 0;
+        ToastUtil.showToast(SyncWallpaperService.this, file.toString());
 
-                        if (!isSave) {
-                            //noinspection ResultOfMethodCallIgnored
-                            file.delete();
-                        } else {
-//                        file.renameTo()
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        ToastUtil.showToast(SyncWallpaperService.this, "不支持设置壁纸: " + e.getMessage());
+        try {
+            WallpaperTool.setFile2Wallpaper(SyncWallpaperService.this, file, true);
+            ToastUtil.showToast(SyncWallpaperService.this, "设置壁纸成功");
+            setJob(true);
+
+//            boolean isSave = tool.get(Constants.Default.KEY_SAVE, false);
+            boolean isSave = true;
+            if (!isSave) {
+                //noinspection ResultOfMethodCallIgnored
+                file.delete();
+            } else {
+                boolean ret = false;
+                try {
+                    File dest = new File(Constants.Config.WALLPAPER_SAVE_PATH + file.getName());
+                    dest.getParentFile().mkdirs();
+                    ret = file.renameTo(dest);
+                    Log.d("dest ret", dest.toString());
+                    Log.d("dest ret", String.valueOf(ret));
+                } catch (Exception e) {
+                    if (!ret) {
+                        ToastUtil.showToast(this, "保存文件失败");
                     }
                 }
-
-                @Override
-                public void onMessage(String msg) {
-                    ToastUtil.showToast(SyncWallpaperService.this, msg);
-                }
-
-                @Override
-                public void onFailed(String msg) {
-                    ToastUtil.showToast(SyncWallpaperService.this, msg);
-                    setJob(false);
-                }
-            });
-        } else {
-            ToastUtil.showToast(SyncWallpaperService.this, "没有源");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            ToastUtil.showToast(SyncWallpaperService.this, "不支持设置壁纸: " + e.getMessage());
         }
+    }
 
+    @Override
+    public void onMessage(String msg) {
+        ToastUtil.showToast(SyncWallpaperService.this, msg);
+    }
+
+    @Override
+    public void onFailed(String msg) {
+        if (retryTime < 3) {
+            //noinspection NonAtomicOperationOnVolatileField
+            retryTime++;
+            engine.downLoadWallpaper(this);
+
+            ToastUtil.showToast(this, "同步壁纸失败: " + msg + ", 正在重试(" + retryTime + "/3)");
+        } else {
+            ToastUtil.showToast(this, "同步壁纸失败");
+
+            setJob(false);
+        }
 
     }
 

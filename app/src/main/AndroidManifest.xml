@@ -23,16 +23,28 @@
         tools:ignore="UnusedAttribute">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".SettingActivity"
             android:excludeFromRecents="true"
             android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SET_WALLPAPER" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <activity-alias
+            android:name=".MainActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:targetActivity=".SettingActivity">
             <intent-filter>
                 <action android:name="android.intent.action.SET_WALLPAPER" />
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
+        </activity-alias>
 
         <activity
             android:name=".ManualSetActivity"

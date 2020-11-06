@@ -6,9 +6,9 @@
     <string name="manual_set_label">同步壁纸</string>
 
     <string name="wallpaper_source">选择壁纸来源</string>
-    <string name="update_frequency">设置更新频率</string>
+    <string name="update_time">设置定时更新</string>
     <string name="every_day">每天</string>
-    <string name="save_path">设置保存位置</string>
+    <string name="save_path">保存壁纸到手机</string>
     <string name="no_save">不保存</string>
     <string name="set_lock_screen">同时设置锁屏</string>
     <string name="bing_search">必应搜索</string>

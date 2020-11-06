@@ -20,7 +20,7 @@ public class MainBroadcastReceiver extends BroadcastReceiver {
 
         switch (intent.getAction()) {
             case ACTION_SECRET_CODE:
-                Intent i = new Intent(context, MainActivity.class);
+                Intent i = new Intent(context, SettingActivity.class);
                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 context.startActivity(i);
                 break;

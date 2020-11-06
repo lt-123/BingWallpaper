@@ -52,4 +52,12 @@ public class SpTool {
     }
 
 
+    public void save(String key, boolean value) {
+        preferences.edit().putBoolean(key, value).apply();
+    }
+
+    public boolean get(String key, boolean def) {
+        return preferences.getBoolean(key, def);
+    }
+
 }
