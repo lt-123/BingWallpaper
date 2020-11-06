@@ -11,6 +11,7 @@ public class MainBroadcastReceiver extends BroadcastReceiver {
 
     public static final String ACTION_SECRET_CODE = "android.provider.Telephony.SECRET_CODE";
 
+    @SuppressWarnings("SwitchStatementWithTooFewBranches")
     @Override
     public void onReceive(Context context, Intent intent) {
 
@@ -24,11 +25,6 @@ public class MainBroadcastReceiver extends BroadcastReceiver {
                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 context.startActivity(i);
                 break;
-            default:
-                context.startService(new Intent(context, SyncWallpaperService.class));
-                break;
-
-
         }
 
     }

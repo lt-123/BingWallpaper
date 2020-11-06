@@ -29,5 +29,6 @@
     <string name="please_input_desc">请输入描述(可选)</string>
     <string name="test">检测</string>
     <string name="add_source_doc">仅支持添加直链源, 名称随意但不可重复. 添加前请先检测, 检测结果会出现在下方, 结果满意再添加, 不然添加了也不能用</string>
+    <string name="sync_wallpaper">Sync Wallpaper</string>
 
 </resources>

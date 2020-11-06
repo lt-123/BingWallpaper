@@ -48,6 +48,13 @@ public interface Constants {
          * 文件保存路径
          */
         String WALLPAPER_SAVE_PATH = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + File.separator + "wallpaper" + File.separator;
+
+
+        /**
+         * 通知通道ID和名称
+         */
+        String CHANNEL_ONE_ID = "Default";
+        String CHANNEL_ONE_NAME = "Default";
     }
 
 }
