@@ -60,11 +60,14 @@ public class TimeListActivity extends Activity implements View.OnClickListener, 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             // 如果未忽略显示提醒按钮
             if (!BatteryUtil.hasIgnoredBatteryOptimization(this)) {
-                btIgnoreBattery.setVisibility(View.VISIBLE);
+                btIgnoreBattery.setEnabled(true);
                 btIgnoreBattery.setOnClickListener(this);
             } else {
-                btIgnoreBattery.setVisibility(View.GONE);
+                btIgnoreBattery.setEnabled(false);
+                btIgnoreBattery.setText(getString(R.string.complete_ignore_battery));
             }
+        } else {
+            btIgnoreBattery.setVisibility(View.GONE);
         }
     }
 
