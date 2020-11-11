@@ -30,5 +30,11 @@
     <string name="test">检测</string>
     <string name="add_source_doc">仅支持添加直链源, 名称随意但不可重复. 添加前请先检测, 检测结果会出现在下方, 结果满意再添加, 不然添加了也不能用</string>
     <string name="sync_wallpaper">Sync Wallpaper</string>
+    <string name="ignore_battery">忽略电池优化</string>
+    <string name="add_timed">添加定时</string>
+    <string name="clear_timed">清空定时</string>
+    <string name="add_timed_desc">点击添加定时按钮, 可以添加定时任务</string>
+    <string name="title_timed_list">设置定时任务</string>
+    <string name="desc_ignore_battery">由于一些ROM对定时任务限制的很严格, 建议把本app加入的白名单, 避免定时任务无法正常运行</string>
 
 </resources>

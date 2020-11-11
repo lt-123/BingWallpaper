@@ -3,7 +3,6 @@ package xyz.liut.bingwallpaper;
 import android.annotation.SuppressLint;
 import android.app.job.JobParameters;
 import android.app.job.JobService;
-import android.content.Intent;
 import android.util.Log;
 
 /**
@@ -19,7 +18,7 @@ public class AlarmJob extends JobService {
     @Override
     public boolean onStartJob(JobParameters params) {
         Log.d(TAG, "onStartJob() called");
-        startService(new Intent(this, SyncWallpaperService.class));
+        SyncWallpaperService.start(this);
         return false;
     }
 

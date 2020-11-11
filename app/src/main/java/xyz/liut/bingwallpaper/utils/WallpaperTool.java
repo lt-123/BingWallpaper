@@ -44,11 +44,11 @@ public class WallpaperTool {
 //            wallpaperManager.suggestDesiredDimensions(bitmap.getWidth(), bitmap.getHeight());
             wallpaperManager.suggestDesiredDimensions(screenWidth, screenHeight);
         } else {
-            Bitmap wallpaper = cropCenter(bitmap, screenWidth, screenHeight);
-            setWallpaper(wallpaperManager, lockScreen, wallpaper);
+//            Bitmap wallpaper = cropCenter(bitmap, screenWidth, screenHeight);
+            setWallpaper(wallpaperManager, lockScreen, bitmap);
 //            wallpaperManager.suggestDesiredDimensions(wallpaper.getWidth(), wallpaper.getHeight());
             wallpaperManager.suggestDesiredDimensions(screenWidth, screenHeight);
-            wallpaper.recycle();
+            bitmap.recycle();
         }
         bitmap.recycle();
     }

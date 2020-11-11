@@ -1,6 +1,5 @@
 package xyz.liut.bingwallpaper;
 
-import android.content.Intent;
 import android.os.Build;
 import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
@@ -32,12 +31,7 @@ public class SyncTileService extends TileService {
     public void onClick() {
         Log.d(TAG, "onClick() called");
 
-        // 同步壁纸
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(new Intent(getApplicationContext(), SyncWallpaperService.class));
-        } else {
-            startService(new Intent(getApplicationContext(), SyncWallpaperService.class));
-        }
+        SyncWallpaperService.start(this);
     }
 
 

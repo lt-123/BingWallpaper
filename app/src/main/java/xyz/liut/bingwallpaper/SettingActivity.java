@@ -115,7 +115,7 @@ public class SettingActivity extends Activity implements View.OnClickListener {
 
             // 立即设置
             case R.id.bt_setup_now:
-                startService(new Intent(getApplicationContext(), SyncWallpaperService.class));
+                SyncWallpaperService.start(this);
                 finish();
                 break;
             // 清空壁纸

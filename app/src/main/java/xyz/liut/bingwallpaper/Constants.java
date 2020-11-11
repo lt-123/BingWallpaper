@@ -5,6 +5,8 @@ import android.os.Environment;
 import java.io.File;
 
 /**
+ * 常量值
+ * <p>
  * Create by liut on 20-11-4
  */
 public interface Constants {
@@ -19,6 +21,11 @@ public interface Constants {
          * 默认源 KEY
          */
         String KEY_DEFAULT_SOURCE = "KEY_DEFAULT_SOURCE";
+
+        /**
+         * 定时 时间列表
+         */
+        String KEY_TIMED_LIST = "KEY_TIMED_LIST";
 
         /**
          * 保存壁纸 KEY

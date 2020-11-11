@@ -1,7 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/add_timed_desc" />
+
+    <LinearLayout
+        android:id="@+id/ll_timed_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:orientation="vertical" />
+
+    <Button
+        android:id="@+id/bt_add_timed"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/add_timed" />
+
+    <Button
+        android:id="@+id/bt_clear_timed"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/clear_timed" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="8dp"
+        android:text="@string/desc_ignore_battery"
+        android:textColor="@color/colorAccent" />
+
+    <Button
+        android:id="@+id/bt_ignore_battery"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/ignore_battery"
+        android:textColor="@color/colorPrimaryDark"
+        android:visibility="gone"
+        tools:visibility="visible" />
 
 </LinearLayout>

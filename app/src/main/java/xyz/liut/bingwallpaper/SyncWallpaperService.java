@@ -5,7 +5,9 @@ import android.app.Service;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -38,6 +40,17 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
     private volatile IWallpaperEngine engine;
 
     private SpTool spTool;
+
+    /**
+     * 启动
+     */
+    public static void start(Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(new Intent(context.getApplicationContext(), SyncWallpaperService.class));
+        } else {
+            context.startService(new Intent(context.getApplicationContext(), SyncWallpaperService.class));
+        }
+    }
 
     @Override
     public void onCreate() {
