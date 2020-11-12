@@ -2,9 +2,7 @@ package xyz.liut.bingwallpaper;
 
 import android.app.Notification;
 import android.app.Service;
-import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
@@ -14,7 +12,7 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 
 import java.io.File;
-import java.util.Calendar;
+import java.util.List;
 
 import xyz.liut.bingwallpaper.bean.SourceBean;
 import xyz.liut.bingwallpaper.engine.EngineFactory;
@@ -88,12 +86,12 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
     public void onSucceed(File file) {
         retryTime = 0;
 
+        // 保存文件
+        saveFile(file);
+
         try {
             WallpaperTool.setFile2Wallpaper(SyncWallpaperService.this, file, true);
             showMsg("设置壁纸成功");
-
-            // 保存文件
-            saveFile(file);
 
             // 设置定时
             setJob(true);
@@ -135,27 +133,30 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
      * @param file 文件
      */
     private void saveFile(File file) {
-//            boolean isSave = spTool.get(Constants.Default.KEY_SAVE, false);
-        boolean isSave = true;
+        boolean isSave = spTool.get(Constants.Default.KEY_SAVE, false);
         if (isSave) {
-            boolean ret = false;
             try {
-                // TODO 检查权限
-                File dest = new File(Constants.Config.WALLPAPER_SAVE_PATH + file.getName());
-                File dir = dest.getParentFile();
-                Log.d("liu", dir.toString());
+                File dir = new File(Constants.Config.WALLPAPER_SAVE_PATH);
                 if (!dir.exists()) {
                     boolean r = dir.mkdirs();
-                    Log.d("liut", String.valueOf(r));
+                    Log.d(TAG, "创建文件夹: " + r);
                 }
-                ret = file.renameTo(dest);
-                Log.d("dest ret", dest.toString());
-                Log.d("dest ret", String.valueOf(ret));
+                if (dir.exists()) {
+                    File dest = new File(dir, file.getName());
+                    boolean ret = file.renameTo(dest);
+                    Log.d(TAG, "dest ret: " + ret);
+
+                    if (!ret) {
+                        showMsg("保存文件失败");
+                    }
+                } else {
+                    Log.e(TAG, "创建文件夹失败");
+
+                }
+
             } catch (Exception e) {
                 e.printStackTrace();
-                if (!ret) {
-                    showMsg("保存文件失败: " + e.getMessage());
-                }
+                showMsg("保存文件失败: " + e.getMessage());
             }
         } else {
             //noinspection ResultOfMethodCallIgnored
@@ -169,7 +170,6 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
      * @param bool 是否成功的
      */
     private void setJob(boolean bool) {
-        // --------------- 定时
         JobScheduler scheduler = (JobScheduler) getApplication().getSystemService(JOB_SCHEDULER_SERVICE);
         if (scheduler == null) {
             showMsg("不支持自动同步壁纸");
@@ -177,42 +177,41 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
         }
         scheduler.cancelAll();
 
-        ComponentName componentName = new ComponentName(getApplication(), AlarmJob.class.getName());
-        JobInfo.Builder builder = new JobInfo.Builder(1123, componentName)
-                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
-//                .setPrefetch(true);   // 开启会崩溃？
-        if (bool) {
-            Calendar now = Calendar.getInstance();
-            Log.d(TAG, "time " + now.getTime());
-            Calendar targetTime = (Calendar) now.clone();
-            targetTime.set(Calendar.HOUR_OF_DAY, 0);
-            targetTime.set(Calendar.MINUTE, 0);
-            targetTime.set(Calendar.SECOND, 0);
-            targetTime.set(Calendar.MILLISECOND, 0);
-
-            if (targetTime.before(now)) {
-                targetTime.add(Calendar.DATE, 1);
-            }
-            long latencyTime = targetTime.getTimeInMillis() - now.getTimeInMillis();
-            builder.setMinimumLatency(latencyTime).setOverrideDeadline(latencyTime + 1000L * 60 * 30);
-        } else {
-            builder.setMinimumLatency(1000L * 60 * 30).setOverrideDeadline(1000L * 60 * 30 * 2);
+        if (!bool) {
+            AlarmJob.setupDelay(this, 1000L * 60 * 30, 1000L * 60 * 30 * 2);
             showMsg("设置壁纸失败，半个多小时后自动重试");
         }
 
-        JobInfo jobInfo = builder.build();
+        List<String> timedList = TimedListManager.loadTimedList(this);
+        for (String timed : timedList) {
+            // 时间, 格式: hh:mm
+            String[] times = timed.split(":");
+            int hour = Integer.parseInt(times[0]);
+            int minute = Integer.parseInt(times[1]);
 
-        Log.d(TAG, "jonInfo --> " + jobInfo.getMinLatencyMillis() / 60 / 1000L);
-
-        int scheduleResult = scheduler.schedule(jobInfo);
-        if (scheduleResult == JobScheduler.RESULT_SUCCESS) {
-            Log.i(TAG, "定时ok");
-        } else {
-            showMsg("-不支持自动同步壁纸-");
+            boolean scheduleResult = AlarmJob.setupTimed(this, hour, minute, 30);
+            if (scheduleResult) {
+                Log.i(TAG, "定时ok");
+            } else {
+                showMsg("-不支持自动同步壁纸-");
+                break;
+            }
         }
-
     }
 
+    /**
+     * 显示通知 / toast
+     *
+     * @param msg content
+     */
+    private void showMsg(String msg) {
+        setNotification(msg);
+        ToastUtil.showToast(this, msg);
+    }
+
+    /**
+     * 显示通知
+     */
     private void setNotification(String msg) {
         Notification.Builder builder;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
@@ -229,11 +228,6 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
 
         startForeground(1, builder.build());
 
-    }
-
-    private void showMsg(String msg) {
-        setNotification(msg);
-        ToastUtil.showToast(this, msg);
     }
 
 

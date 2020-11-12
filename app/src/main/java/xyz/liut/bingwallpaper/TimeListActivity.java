@@ -6,7 +6,6 @@ import android.app.AlertDialog;
 import android.app.TimePickerDialog;
 import android.os.Build;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -15,8 +14,10 @@ import android.widget.TimePicker;
 
 import androidx.annotation.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import xyz.liut.bingwallpaper.utils.BatteryUtil;
-import xyz.liut.bingwallpaper.utils.SpTool;
 
 /**
  * 定时任务列表
@@ -30,16 +31,12 @@ public class TimeListActivity extends Activity implements View.OnClickListener, 
     private LinearLayout llTimedList;
     private Button btIgnoreBattery;
 
-    private SpTool spTool;
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_time_list);
 
         setTitle(R.string.title_timed_list);
-
-        spTool = SpTool.getDefault(this);
 
         timePickerDialog = new TimePickerDialog(this, this, 0, 0, true);
 
@@ -76,11 +73,9 @@ public class TimeListActivity extends Activity implements View.OnClickListener, 
      * 加载保存的定时列表
      */
     private void loadData() {
-        String timedList = spTool.get(Constants.Default.KEY_TIMED_LIST);
-
-        String[] timeArray = timedList.split("#");
-        for (String time : timeArray) {
-            if (!TextUtils.isEmpty(time)) addTime(time);
+        List<String> timedList = TimedListManager.loadTimedList(this);
+        for (String timed : timedList) {
+            addTime(timed);
         }
     }
 
@@ -107,7 +102,7 @@ public class TimeListActivity extends Activity implements View.OnClickListener, 
             // 清空定时
             case R.id.bt_clear_timed:
                 llTimedList.removeAllViews();
-                spTool.save(Constants.Default.KEY_TIMED_LIST, null);
+                TimedListManager.clear(this);
                 break;
 
             // 忽略电池优化
@@ -151,16 +146,13 @@ public class TimeListActivity extends Activity implements View.OnClickListener, 
      */
     private void saveTimed() {
         int count = llTimedList.getChildCount();
-        StringBuilder builder = new StringBuilder();
+        List<String> list = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             TextView textView = (TextView) llTimedList.getChildAt(i);
             String time = textView.getText().toString();
-            builder.append(time);
-            if (i != count - 1) {
-                builder.append("#");
-            }
+            list.add(time);
         }
-        spTool.save(Constants.Default.KEY_TIMED_LIST, builder.toString());
+        TimedListManager.save(this, list);
     }
 
 
