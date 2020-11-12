@@ -37,5 +37,6 @@
     <string name="title_timed_list">设置定时任务</string>
     <string name="desc_ignore_battery">由于一些ROM对定时任务限制的很严格, 建议把本app加入的白名单, 避免定时任务无法正常运行</string>
     <string name="complete_ignore_battery">已完成忽略电池优化</string>
+    <string name="no_timed">无定时任务</string>
 
 </resources>

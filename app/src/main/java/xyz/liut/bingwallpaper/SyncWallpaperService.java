@@ -90,7 +90,8 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
         saveFile(file);
 
         try {
-            WallpaperTool.setFile2Wallpaper(SyncWallpaperService.this, file, true);
+            boolean setLockScreen = SpTool.getDefault(this).get(Constants.Default.KEY_LOCK_SCREEN, false);
+            WallpaperTool.setFile2Wallpaper(SyncWallpaperService.this, file, setLockScreen);
             showMsg("设置壁纸成功");
 
             // 设置定时

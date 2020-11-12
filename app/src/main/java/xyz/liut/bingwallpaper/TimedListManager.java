@@ -27,17 +27,8 @@ public class TimedListManager {
     }
 
     public static void save(Context context, List<String> timedList) {
-        StringBuilder builder = new StringBuilder();
-        int size = timedList.size();
-        for (int i = 0; i < size; i++) {
-            builder.append(timedList.get(i));
-            if (i != size - 1) {
-                builder.append("#");
-            }
-        }
-
         SpTool spTool = SpTool.getDefault(context);
-        spTool.save(Constants.Default.KEY_TIMED_LIST, builder.toString());
+        spTool.save(Constants.Default.KEY_TIMED_LIST, TextUtils.join("#", timedList));
     }
 
 

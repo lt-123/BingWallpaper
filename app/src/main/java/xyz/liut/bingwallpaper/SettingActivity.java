@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -15,6 +16,8 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+
+import java.util.List;
 
 import xyz.liut.bingwallpaper.bean.SourceBean;
 import xyz.liut.bingwallpaper.utils.ComponentUtil;
@@ -141,6 +144,13 @@ public class SettingActivity extends Activity implements View.OnClickListener {
         swShowManual.setChecked(showManual);
         swShowMain.setChecked(showMain);
 
+        List<String> timedList = TimedListManager.loadTimedList(this);
+        if (timedList.size() == 0) {
+            tvTime.setText(getString(R.string.no_timed));
+        } else {
+            tvTime.setText(getString(R.string.every_day) + ": " + TextUtils.join("/", timedList));
+        }
+
         refreshSubText();
     }
 
@@ -157,15 +167,15 @@ public class SettingActivity extends Activity implements View.OnClickListener {
     @SuppressLint("SetTextI18n")
     private void refreshSubText() {
         if (swSave.isChecked()) {
-            tvSave.setText("壁纸保存到: " + Constants.Config.WALLPAPER_SAVE_PATH);
+            tvSave.setText("壁纸保存到: \n" + Constants.Config.WALLPAPER_SAVE_PATH);
         } else {
             tvSave.setText(R.string.no_save);
         }
 
         if (swLockScreen.isChecked()) {
-            tvSetLockScreen.setText("同时设置锁屏壁纸已开启(仅支持7.0及以上版本): \n" + Constants.Config.WALLPAPER_SAVE_PATH);
+            tvSetLockScreen.setText("同时设置锁屏壁纸已开启(仅支持7.0及以上版本)");
         } else {
-            tvSetLockScreen.setText("同时设置锁屏壁纸已开启");
+            tvSetLockScreen.setText("仅设置桌面壁纸");
         }
 
         if (swShowManual.isChecked()) {
