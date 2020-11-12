@@ -41,13 +41,15 @@ public class DirectEngine implements IWallpaperEngine {
     @Override
     public void downLoadWallpaper(@NonNull Callback callback) {
         String fileName = path + File.separator + fileNameFormat.fileName();
-        Response<File> resp = HttpClient.getInstance().download(url, fileName);
-        if (resp.isSuccessful()) {
-            Log.e("liut", "getHeaders: " + resp.getHeaders());
-            callback.onSucceed(resp.getBody());
-        } else {
-            callback.onFailed(resp.getErrorMessage());
+        Response<File> resp = HttpClient.getInstance().download(url, fileName, false);
+
+        if (resp.getError() != null) {
+            callback.onFailed(resp.getError());
+            return;
         }
+
+        Log.e("liut", "getHeaders: " + resp.getHeaders());
+        callback.onSucceed(resp.getBody());
     }
 
 

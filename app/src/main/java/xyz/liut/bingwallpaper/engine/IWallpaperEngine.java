@@ -37,7 +37,7 @@ public interface IWallpaperEngine {
 
         void onMessage(String msg);
 
-        void onFailed(String msg);
+        void onFailed(Exception e);
 
     }
 

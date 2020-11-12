@@ -35,8 +35,6 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
      */
     private volatile int retryTime;
 
-    private SourceBean sourceBean;
-
     private volatile IWallpaperEngine engine;
 
     private SpTool spTool;
@@ -58,7 +56,7 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
         spTool = SpTool.getDefault(this);
 
         // 默认源
-        sourceBean = SourceManager.getDefaultSource(this);
+        SourceBean sourceBean = SourceManager.getDefaultSource(this);
 
         // 根据源获取引擎
         engine = EngineFactory.getDefault(this).getEngineBySourceBean(sourceBean);
@@ -67,7 +65,7 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         new Thread(this::syncWallpaper).start();
-        return super.onStartCommand(intent, flags, startId);
+        return START_NOT_STICKY;
     }
 
     private void syncWallpaper() {
@@ -106,6 +104,31 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
         }
     }
 
+
+    @Override
+    public void onMessage(String msg) {
+        showMsg(msg);
+    }
+
+    @Override
+    public void onFailed(Exception e) {
+        Log.d(TAG, "onFailed() called with: msg = [" + e.getMessage() + "], retryTime=" + retryTime);
+        e.printStackTrace();
+
+        if (retryTime < 3) {
+            //noinspection NonAtomicOperationOnVolatileField
+            retryTime++;
+            engine.downLoadWallpaper(this);
+            showMsg("下载出错: " + e.getMessage() + ", 正在重试(" + retryTime + "/3)...");
+        } else {
+            showMsg("同步壁纸失败");
+
+            setJob(false);
+        }
+
+    }
+
+
     /**
      * 保存壁纸文件
      *
@@ -138,28 +161,6 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
             //noinspection ResultOfMethodCallIgnored
             file.delete();
         }
-    }
-
-    @Override
-    public void onMessage(String msg) {
-        showMsg(msg);
-    }
-
-    @Override
-    public void onFailed(String msg) {
-        Log.d(TAG, "onFailed() called with: msg = [" + msg + "], retryTime=" + retryTime);
-
-        if (retryTime < 3) {
-            //noinspection NonAtomicOperationOnVolatileField
-            retryTime++;
-            engine.downLoadWallpaper(this);
-            showMsg(msg + ", 正在重试(" + retryTime + "/3)...");
-        } else {
-            showMsg("同步壁纸失败");
-
-            setJob(false);
-        }
-
     }
 
     /**
@@ -223,7 +224,7 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
         builder
                 .setAutoCancel(true)
                 .setSmallIcon(R.drawable.ic_bing)
-                .setContentTitle(sourceBean.getName())
+                .setContentTitle(engine.engineName())
                 .setContentText(msg);
 
         startForeground(1, builder.build());

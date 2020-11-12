@@ -23,7 +23,7 @@ public class HttpClientTest extends BaseTest {
 
     @Test
     public void download() {
-        Response<File> resp = HttpClient.getInstance().download(URL, "build/test.jpg");
+        Response<File> resp = HttpClient.getInstance().download(URL, "build/test.jpg", true);
         System.out.println(resp);
     }
 }

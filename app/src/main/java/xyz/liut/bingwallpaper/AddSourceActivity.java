@@ -96,8 +96,8 @@ public class AddSourceActivity extends Activity {
                 }
 
                 @Override
-                public void onFailed(String msg) {
-                    ToastUtil.showToast(AddSourceActivity.this, msg);
+                public void onFailed(Exception e) {
+                    ToastUtil.showToast(AddSourceActivity.this, e.getMessage());
                     detectedResult = false;
                 }
             });

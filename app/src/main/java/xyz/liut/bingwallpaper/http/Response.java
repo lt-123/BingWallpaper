@@ -1,5 +1,7 @@
 package xyz.liut.bingwallpaper.http;
 
+import androidx.annotation.NonNull;
+
 import java.util.List;
 import java.util.Map;
 
@@ -15,11 +17,7 @@ public class Response<T> {
 
     private T body;
 
-    private String errorMessage;
-
-    public boolean isSuccessful() {
-        return 200 == responseCode;
-    }
+    private HttpException error;
 
     public int getResponseCode() {
         return responseCode;
@@ -45,23 +43,28 @@ public class Response<T> {
         this.body = body;
     }
 
+    public HttpException getError() {
+        return error;
+    }
+
+    public void setError(HttpException error) {
+        this.error = error;
+    }
+
     public String getErrorMessage() {
-        if (null == errorMessage)
-            errorMessage = "未知错误";
-        return errorMessage;
+        if (null == error)
+            return "未知错误";
+        return error.getMessage();
     }
 
-    public void setErrorMessage(String errorMessage) {
-        this.errorMessage = errorMessage;
-    }
-
+    @NonNull
     @Override
     public String toString() {
         return "Response{" +
                 "responseCode=" + responseCode +
                 ", headers=" + headers +
                 ", body=" + body +
-                ", errorMessage='" + errorMessage + '\'' +
+                ", error='" + getErrorMessage() + '\'' +
                 '}';
     }
 

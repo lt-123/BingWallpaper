@@ -6,6 +6,8 @@ import androidx.annotation.NonNull;
 
 import org.json.JSONObject;
 
+import java.io.File;
+
 import xyz.liut.bingwallpaper.http.HttpClient;
 import xyz.liut.bingwallpaper.http.Method;
 import xyz.liut.bingwallpaper.http.Response;
@@ -55,24 +57,33 @@ public class BingWallpaperEngine implements IWallpaperEngine {
         try {
             // ----------- 获取 URL
             Response<String> response = HttpClient.getInstance().doRequest(Method.get, BING_WALLPAPER_API);
-            if (response.isSuccessful()) {
-                String resp = response.getBody();
-                String jpgUrl = new JSONObject(resp)
-                        .getJSONArray("images")
-                        .getJSONObject(0)
-                        .getString("url")
-                        .replace("1920x1080", "1080x1920");
-
-                callback.onMessage("获取URL成功，开始下载");
-
-                new DirectEngine(BING_URL + jpgUrl, path, fileNameFormat).downLoadWallpaper(callback);
-            } else {
-                callback.onFailed("下载壁纸失败: " + response.getErrorMessage());
+            if (response.getError() != null) {
+                callback.onFailed(response.getError());
+                return;
             }
 
+            String resp = response.getBody();
+            String jpgUrl = new JSONObject(resp)
+                    .getJSONArray("images")
+                    .getJSONObject(0)
+                    .getString("url")
+                    .replace("1920x1080", "1080x1920");
+
+            callback.onMessage("获取URL成功，开始下载");
+
+            String fileName = path + File.separator + fileNameFormat.fileName();
+            Response<File> fileResponse = HttpClient.getInstance().download(BING_URL + jpgUrl, fileName, true);
+
+            if (fileResponse.getError() != null) {
+                callback.onFailed(fileResponse.getError());
+                return;
+            }
+
+            Log.d("liut", "getHeaders: " + fileResponse.getHeaders());
+            callback.onSucceed(fileResponse.getBody());
+
         } catch (Exception e) {
-            e.printStackTrace();
-            callback.onFailed("下载失败：" + e.getMessage());
+            callback.onFailed(e);
         }
     }
 
