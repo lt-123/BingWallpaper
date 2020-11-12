@@ -29,6 +29,12 @@ public final class HttpClient {
      */
     public static final int READ_TIMEOUT = 8 * 1000;
 
+    /**
+     * UA, 必须设置个UA, 不然一些url不允许访问
+     * Chrome	86.0.4240.183	WebKit 537.36	Linux x86_64
+     */
+    public static final String UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36";
+
 
     public static final HttpClient tools = new HttpClient();
 
@@ -50,6 +56,7 @@ public final class HttpClient {
             urlConnection = (HttpURLConnection) new URL(url).openConnection();
             urlConnection.setConnectTimeout(CONNECT_TIMEOUT);
             urlConnection.setReadTimeout(READ_TIMEOUT);
+            urlConnection.setRequestProperty("User-Agent", UA);
             switch (method) {
                 case get:
                     urlConnection.setDoOutput(false);
@@ -109,6 +116,7 @@ public final class HttpClient {
                 urlConnection = (HttpURLConnection) new URL(url).openConnection();
                 urlConnection.setConnectTimeout(CONNECT_TIMEOUT);
                 urlConnection.setReadTimeout(READ_TIMEOUT);
+                urlConnection.setRequestProperty("User-Agent", UA);
                 response.setResponseCode(urlConnection.getResponseCode());
                 response.setHeaders(urlConnection.getHeaderFields());
 

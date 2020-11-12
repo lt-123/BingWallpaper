@@ -5,12 +5,12 @@ import org.junit.Test;
 
 import java.io.File;
 
-import xyz.liut.bingwallpaper.BaseTest;
+import xyz.liut.bingwallpaper.BaseTestCase;
 
 /**
  * Create by liut on 2020/11/4
  */
-public class BingWallpaperEngineTest extends BaseTest {
+public class BingWallpaperEngineTest extends BaseTestCase {
 
     @Test
     public void setWallpaper() {
@@ -27,9 +27,9 @@ public class BingWallpaperEngineTest extends BaseTest {
             }
 
             @Override
-            public void onFailed(String msg) {
-                System.out.println(msg);
-                Assert.fail(msg);
+            public void onFailed(Exception e) {
+                e.printStackTrace();
+                Assert.fail(e.getMessage());
             }
         });
     }

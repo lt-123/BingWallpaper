@@ -2,18 +2,19 @@ package xyz.liut.bingwallpaper.engine;
 
 import android.util.Log;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
 
-import xyz.liut.bingwallpaper.BaseTest;
+import xyz.liut.bingwallpaper.BaseTestCase;
 
 /**
  * 直链
  * <p>
  * Create by liut on 2020/11/4
  */
-public class DirectEngineTest extends BaseTest {
+public class DirectEngineTest extends BaseTestCase {
 
     private static final String TAG = "DirectEngineTest";
 
@@ -32,8 +33,9 @@ public class DirectEngineTest extends BaseTest {
                     }
 
                     @Override
-                    public void onFailed(String msg) {
-                        Log.d(TAG, "onFailed() called with: msg = [" + msg + "]");
+                    public void onFailed(Exception e) {
+                        e.printStackTrace();
+                        Assert.fail(e.getMessage());
                     }
                 });
     }

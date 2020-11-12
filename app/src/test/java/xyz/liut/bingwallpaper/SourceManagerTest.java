@@ -2,6 +2,7 @@ package xyz.liut.bingwallpaper;
 
 import android.util.Log;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
@@ -13,13 +14,13 @@ import xyz.liut.bingwallpaper.engine.TimeFileNameFormat;
 /**
  * Create by liut on 20-11-4
  */
-public class SourceManagerTest extends BaseTest {
+public class SourceManagerTest extends BaseTestCase {
 
     private static final String TAG = "SourceManagerTest";
 
     @Test
     public void getSourceList() {
-        SourceManager.getSourceList().forEach(sourceBean -> {
+        SourceManager.getSourceList(context).forEach(sourceBean -> {
             TimeFileNameFormat fileFormat = new TimeFileNameFormat(sourceBean.getName());
             DirectEngine engine = new DirectEngine(sourceBean.getUrl(), "build", fileFormat);
             engine.downLoadWallpaper(new IWallpaperEngine.Callback() {
@@ -34,8 +35,9 @@ public class SourceManagerTest extends BaseTest {
                 }
 
                 @Override
-                public void onFailed(String msg) {
-                    Log.d(TAG, "onFailed() called with: msg = [" + msg + "]");
+                public void onFailed(Exception e) {
+                    e.printStackTrace();
+                    Assert.fail(e.getMessage());
                 }
             });
 
