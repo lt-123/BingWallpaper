@@ -86,9 +86,6 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
     public void onSucceed(File file) {
         retryTime = 0;
 
-        // 保存文件
-        saveFile(file);
-
         try {
             boolean setLockScreen = SpTool.getDefault(this).get(Constants.Default.KEY_LOCK_SCREEN, false);
             WallpaperTool.setFile2Wallpaper(SyncWallpaperService.this, file, setLockScreen);
@@ -101,6 +98,10 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
             e.printStackTrace();
             showMsg("不支持设置壁纸: " + e.getMessage());
         }
+
+        // 保存文件
+        saveFile(file);
+
     }
 
 

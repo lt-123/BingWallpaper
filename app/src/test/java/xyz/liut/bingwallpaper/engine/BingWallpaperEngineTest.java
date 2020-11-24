@@ -14,7 +14,7 @@ public class BingWallpaperEngineTest extends BaseTestCase {
 
     @Test
     public void setWallpaper() {
-        new BingWallpaperEngine("build", TimeFileNameFormat.getInstance()).downLoadWallpaper(new IWallpaperEngine.Callback() {
+        new BingWallpaperEngine("build/wallpaper").downLoadWallpaper(new IWallpaperEngine.Callback() {
             @Override
             public void onSucceed(File file) {
                 System.out.println(file);

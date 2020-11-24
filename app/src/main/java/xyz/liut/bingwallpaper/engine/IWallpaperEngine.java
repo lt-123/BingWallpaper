@@ -13,8 +13,11 @@ import java.io.File;
 public interface IWallpaperEngine {
 
     long HOUR = 1000 * 60 * 60;
-    long DAY = 1000 * 60 * 60 * 24;
+    long DAY = HOUR * 24;
 
+    /**
+     * @return 名称
+     */
     String engineName();
 
     /**
@@ -22,9 +25,10 @@ public interface IWallpaperEngine {
      */
     long updateInterval();
 
-
     /**
      * 下载并设置壁纸
+     *
+     * @param callback 下载回调
      */
     void downLoadWallpaper(@NonNull Callback callback);
 
@@ -39,13 +43,6 @@ public interface IWallpaperEngine {
 
         void onFailed(Exception e);
 
-    }
-
-    /**
-     * 提供文件名
-     */
-    interface FileNameFormat {
-        String fileName();
     }
 
 }

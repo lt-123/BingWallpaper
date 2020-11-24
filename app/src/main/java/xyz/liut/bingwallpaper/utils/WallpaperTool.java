@@ -33,6 +33,10 @@ public class WallpaperTool {
         Log.d(TAG, "screenHeight: " + screenHeight);
 
         Bitmap bitmap = BitmapFactory.decodeFile(jpgFile.getPath());
+
+        if (bitmap == null) {
+            throw new Exception("图片格式错误");
+        }
         Log.i(TAG, "bitmapWidth: " + bitmap.getWidth());
         Log.i(TAG, "bitmapHeight: " + bitmap.getHeight());
 

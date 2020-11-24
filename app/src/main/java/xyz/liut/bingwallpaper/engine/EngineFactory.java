@@ -15,15 +15,13 @@ import xyz.liut.bingwallpaper.bean.SourceBean;
 public class EngineFactory {
 
     private final String path;
-    private final IWallpaperEngine.FileNameFormat fileNameFormat;
 
     public static EngineFactory getDefault(Context context) {
-        return new EngineFactory(context.getExternalCacheDir().toString(), TimeFileNameFormat.getInstance());
+        return new EngineFactory(context.getExternalCacheDir().toString());
     }
 
-    public EngineFactory(String path, IWallpaperEngine.FileNameFormat fileNameFormat) {
+    public EngineFactory(String path) {
         this.path = path;
-        this.fileNameFormat = fileNameFormat;
     }
 
     /**
@@ -32,12 +30,13 @@ public class EngineFactory {
      * @param bean 资源类
      * @return 引擎
      */
+    @SuppressWarnings("SwitchStatementWithTooFewBranches")
     public IWallpaperEngine getEngineBySourceBean(@NonNull SourceBean bean) {
         switch (bean.getName()) {
             case BingWallpaperEngine.NAME:
-                return new BingWallpaperEngine(path, fileNameFormat);
+                return new BingWallpaperEngine(path);
             default:
-                return new DirectEngine(bean.getUrl(), path, fileNameFormat);
+                return new DirectEngine(bean.getName(), bean.getUrl(), path);
         }
     }
 

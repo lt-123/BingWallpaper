@@ -7,9 +7,9 @@ import org.junit.Test;
 
 import java.io.File;
 
-import xyz.liut.bingwallpaper.engine.DirectEngine;
+import xyz.liut.bingwallpaper.engine.BingWallpaperEngine;
+import xyz.liut.bingwallpaper.engine.EngineFactory;
 import xyz.liut.bingwallpaper.engine.IWallpaperEngine;
-import xyz.liut.bingwallpaper.engine.TimeFileNameFormat;
 
 /**
  * Create by liut on 20-11-4
@@ -21,8 +21,9 @@ public class SourceManagerTest extends BaseTestCase {
     @Test
     public void getSourceList() {
         SourceManager.getSourceList(context).forEach(sourceBean -> {
-            TimeFileNameFormat fileFormat = new TimeFileNameFormat(sourceBean.getName());
-            DirectEngine engine = new DirectEngine(sourceBean.getUrl(), "build", fileFormat);
+            if (sourceBean.getName().equals(BingWallpaperEngine.NAME)) return;
+            IWallpaperEngine engine = new EngineFactory("build/wallpaper")
+                    .getEngineBySourceBean(sourceBean);
             engine.downLoadWallpaper(new IWallpaperEngine.Callback() {
                 @Override
                 public void onSucceed(File file) {

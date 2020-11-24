@@ -5,6 +5,9 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 import xyz.liut.bingwallpaper.http.HttpClient;
 import xyz.liut.bingwallpaper.http.Response;
@@ -14,23 +17,25 @@ import xyz.liut.bingwallpaper.http.Response;
  * <p>
  * Create by liut on 2020/11/4
  */
-public class DirectEngine implements IWallpaperEngine {
+public class DirectEngine extends AbstractWallpaperEngine {
 
-    private static final String NAME = "DirectEngine";
+    private final SimpleDateFormat format;
 
+    private final String name;
     private final String url;
     private final String path;
-    private final IWallpaperEngine.FileNameFormat fileNameFormat;
 
-    public DirectEngine(@NonNull String url, @NonNull String path, @NonNull FileNameFormat fileNameFormat) {
+    public DirectEngine(@NonNull String name, @NonNull String url, @NonNull String path) {
+        this.name = name;
         this.url = url;
         this.path = path;
-        this.fileNameFormat = fileNameFormat;
+
+        format = new SimpleDateFormat("yyyy-MM-dd'.jpg'", Locale.CHINESE);
     }
 
     @Override
     public String engineName() {
-        return NAME;
+        return name;
     }
 
     @Override
@@ -39,8 +44,13 @@ public class DirectEngine implements IWallpaperEngine {
     }
 
     @Override
+    protected String createFileName() {
+        return engineName() + File.separator + format.format(new Date());
+    }
+
+    @Override
     public void downLoadWallpaper(@NonNull Callback callback) {
-        String fileName = path + File.separator + fileNameFormat.fileName();
+        String fileName = path + File.separator + createFileName();
         Response<File> resp = HttpClient.getInstance().download(url, fileName, false);
 
         if (resp.getError() != null) {

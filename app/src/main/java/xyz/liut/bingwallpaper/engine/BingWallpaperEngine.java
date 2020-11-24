@@ -7,6 +7,9 @@ import androidx.annotation.NonNull;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 import xyz.liut.bingwallpaper.http.HttpClient;
 import xyz.liut.bingwallpaper.http.Method;
@@ -18,9 +21,9 @@ import xyz.liut.bingwallpaper.http.Response;
  * Create by liut
  * 2020/10/31
  */
-public class BingWallpaperEngine implements IWallpaperEngine {
+public class BingWallpaperEngine extends AbstractWallpaperEngine {
 
-    public static final String NAME = "BingWallpaperEngine";
+    public static final String NAME = "BingWallpaper";
     private static final String TAG = NAME;
 
     /**
@@ -33,12 +36,13 @@ public class BingWallpaperEngine implements IWallpaperEngine {
      */
     private static final String BING_WALLPAPER_API = "https://www.bing.com/HPImageArchive.aspx?format=js&n=1";
 
-    private final String path;
-    private final IWallpaperEngine.FileNameFormat fileNameFormat;
+    private final SimpleDateFormat format;
 
-    public BingWallpaperEngine(@NonNull String path, @NonNull FileNameFormat fileNameFormat) {
+    private final String path;
+
+    public BingWallpaperEngine(@NonNull String path) {
         this.path = path;
-        this.fileNameFormat = fileNameFormat;
+        format = new SimpleDateFormat("yyyy-MM-dd'.jpg'", Locale.CHINESE);
     }
 
     @Override
@@ -49,6 +53,11 @@ public class BingWallpaperEngine implements IWallpaperEngine {
     @Override
     public long updateInterval() {
         return DAY;
+    }
+
+    @Override
+    protected String createFileName() {
+        return engineName() + File.separator + format.format(new Date());
     }
 
     @Override
@@ -63,6 +72,7 @@ public class BingWallpaperEngine implements IWallpaperEngine {
             }
 
             String resp = response.getBody();
+            Log.d(TAG, "resp = " + resp);
             String jpgUrl = new JSONObject(resp)
                     .getJSONArray("images")
                     .getJSONObject(0)
@@ -71,7 +81,7 @@ public class BingWallpaperEngine implements IWallpaperEngine {
 
             callback.onMessage("获取URL成功，开始下载");
 
-            String fileName = path + File.separator + fileNameFormat.fileName();
+            String fileName = path + File.separator + createFileName();
             Response<File> fileResponse = HttpClient.getInstance().download(BING_URL + jpgUrl, fileName, true);
 
             if (fileResponse.getError() != null) {

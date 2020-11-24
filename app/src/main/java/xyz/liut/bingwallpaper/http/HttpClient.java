@@ -100,48 +100,50 @@ public final class HttpClient {
 
         if (dir == null) {
             response.setError(new HttpException("创建文件夹失败"));
+            return response;
         } else if (dir.isFile()) {
             boolean ret = dir.delete();
             if (!ret) {
                 response.setError(new HttpException("创建文件夹失败"));
+                return response;
             }
         } else if (!dir.exists()) {
             boolean ret = dir.mkdirs();
             if (!ret) {
                 response.setError(new HttpException("创建文件夹失败"));
+                return response;
             }
-        } else {
-            HttpURLConnection urlConnection;
-            try {
-                urlConnection = (HttpURLConnection) new URL(url).openConnection();
-                urlConnection.setConnectTimeout(CONNECT_TIMEOUT);
-                urlConnection.setReadTimeout(READ_TIMEOUT);
-                urlConnection.setRequestProperty("User-Agent", UA);
-                response.setResponseCode(urlConnection.getResponseCode());
-                response.setHeaders(urlConnection.getHeaderFields());
+        }
 
-                int fileLength = urlConnection.getContentLength();
+        HttpURLConnection urlConnection;
+        try {
+            urlConnection = (HttpURLConnection) new URL(url).openConnection();
+            urlConnection.setConnectTimeout(CONNECT_TIMEOUT);
+            urlConnection.setReadTimeout(READ_TIMEOUT);
+            urlConnection.setRequestProperty("User-Agent", UA);
+            response.setResponseCode(urlConnection.getResponseCode());
+            response.setHeaders(urlConnection.getHeaderFields());
 
-                try (InputStream is = urlConnection.getInputStream();
-                     OutputStream os = new FileOutputStream(file)) {
-                    byte[] buffer = new byte[1024];
-                    int len;
-                    while ((len = is.read(buffer)) != -1)
-                        os.write(buffer, 0, len);
+            int fileLength = urlConnection.getContentLength();
 
-                    if (checkFileLength && file.length() != fileLength) {
-                        //noinspection ResultOfMethodCallIgnored
-                        file.delete();
-                        response.setError(new HttpException("文件下载不完整: " + url));
-                    } else {
-                        response.setBody(file);
-                        Log.d(TAG, "download: fileLength = " + fileLength);
-                    }
+            try (InputStream is = urlConnection.getInputStream();
+                 OutputStream os = new FileOutputStream(file)) {
+                byte[] buffer = new byte[1024];
+                int len;
+                while ((len = is.read(buffer)) != -1)
+                    os.write(buffer, 0, len);
+
+                if (checkFileLength && file.length() != fileLength) {
+                    //noinspection ResultOfMethodCallIgnored
+                    file.delete();
+                    response.setError(new HttpException("文件下载不完整: " + url));
+                } else {
+                    response.setBody(file);
+                    Log.d(TAG, "download: fileLength = " + fileLength);
                 }
-            } catch (Exception e) {
-                response.setError(new HttpException("下载出错: " + url, e));
             }
-
+        } catch (Exception e) {
+            response.setError(new HttpException("下载出错: " + url, e));
         }
 
         return response;

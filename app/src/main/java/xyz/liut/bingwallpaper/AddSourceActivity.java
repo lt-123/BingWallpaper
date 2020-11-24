@@ -16,7 +16,6 @@ import java.io.File;
 import xyz.liut.bingwallpaper.bean.SourceBean;
 import xyz.liut.bingwallpaper.engine.DirectEngine;
 import xyz.liut.bingwallpaper.engine.IWallpaperEngine;
-import xyz.liut.bingwallpaper.engine.TimeFileNameFormat;
 import xyz.liut.bingwallpaper.utils.ToastUtil;
 
 /**
@@ -73,7 +72,7 @@ public class AddSourceActivity extends Activity {
         }
         ToastUtil.showToast(AddSourceActivity.this, "开始检测");
         new Thread(() -> {
-            DirectEngine engine = new DirectEngine(url, getExternalCacheDir().toString(), TimeFileNameFormat.getInstance());
+            DirectEngine engine = new DirectEngine("addSource", url, getExternalCacheDir().toString());
             engine.downLoadWallpaper(new IWallpaperEngine.Callback() {
                 @Override
                 public void onSucceed(File file) {
