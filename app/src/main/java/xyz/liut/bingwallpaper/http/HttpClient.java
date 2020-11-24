@@ -136,14 +136,14 @@ public final class HttpClient {
                 if (checkFileLength && file.length() != fileLength) {
                     //noinspection ResultOfMethodCallIgnored
                     file.delete();
-                    response.setError(new HttpException("文件下载不完整: " + url));
+                    response.setError(new HttpException("文件下载不完整"));
                 } else {
                     response.setBody(file);
                     Log.d(TAG, "download: fileLength = " + fileLength);
                 }
             }
         } catch (Exception e) {
-            response.setError(new HttpException("下载出错: " + url, e));
+            response.setError(new HttpException(e.getMessage(), e));
         }
 
         return response;

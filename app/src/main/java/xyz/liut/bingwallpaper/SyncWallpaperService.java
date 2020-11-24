@@ -118,8 +118,8 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
         if (retryTime < 3) {
             //noinspection NonAtomicOperationOnVolatileField
             retryTime++;
-            engine.downLoadWallpaper(this);
             showMsg("下载出错: " + e.getMessage() + ", 正在重试(" + retryTime + "/3)...");
+            engine.downLoadWallpaper(this);
         } else {
             showMsg("同步壁纸失败");
 
@@ -195,7 +195,7 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
             if (scheduleResult) {
                 Log.i(TAG, "定时ok");
             } else {
-                showMsg("-不支持自动同步壁纸-");
+                showMsg("不支持自动同步壁纸");
                 break;
             }
         }

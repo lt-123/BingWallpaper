@@ -32,7 +32,7 @@ public class SourceManager {
         List<SourceBean> beans = new ArrayList<>();
         beans.add(new SourceBean(BingWallpaperEngine.NAME, BingWallpaperEngine.BING_URL, "[推荐]微软bing搜索每日壁纸", true));
 
-        beans.add(new SourceBean("unsplash random", "https://source.unsplash.com/random", "[推荐]The most powerful photo engine in the world.", true));
+        beans.add(new SourceBean("Unsplash Random", "https://source.unsplash.com/random", "[推荐]The most powerful photo engine in the world.", true));
 
         beans.add(new SourceBean("Lorem Picsum 1080P", "https://picsum.photos/1080", "[推荐]The Lorem Ipsum for photos. 1080P", true));
         beans.add(new SourceBean("Lorem Picsum 1920P", "https://picsum.photos/1920", "[推荐]The Lorem Ipsum for photos. 1920P", true));
