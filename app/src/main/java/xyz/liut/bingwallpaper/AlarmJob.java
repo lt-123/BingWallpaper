@@ -21,6 +21,11 @@ public class AlarmJob extends JobService {
 
     private static final String TAG = "AlarmJob";
 
+    /**
+     * 1 分钟
+     */
+    private static final int MINUTE = 1000 * 60;
+
 
     /**
      * 定时
@@ -44,20 +49,20 @@ public class AlarmJob extends JobService {
             targetTime.add(Calendar.DATE, 1);
         }
 
-        long minLatencyMillis = targetTime.getTimeInMillis() - now.getTimeInMillis();
-        long maxExecutionDelayMillis = minLatencyMillis + 1000L * 60 * delayMinute;
+        long minLatencyMinutes = (targetTime.getTimeInMillis() - now.getTimeInMillis()) / MINUTE;
+        long maxExecutionDelayMinutes = minLatencyMinutes + delayMinute;
 
-        return setupDelay(context, minLatencyMillis, maxExecutionDelayMillis);
+        return setupDelay(context, minLatencyMinutes, maxExecutionDelayMinutes);
     }
 
     /**
      * 定时
      *
-     * @param minLatencyMillis        毫秒之后
-     * @param maxExecutionDelayMillis 毫秒之前
+     * @param minLatencyMinutes        分钟之后
+     * @param maxExecutionDelayMinutes 分钟之前
      * @return 结果
      */
-    public static boolean setupDelay(Context context, long minLatencyMillis, long maxExecutionDelayMillis) {
+    public static boolean setupDelay(Context context, long minLatencyMinutes, long maxExecutionDelayMinutes) {
         JobScheduler scheduler = (JobScheduler) context.getApplicationContext().getSystemService(JOB_SCHEDULER_SERVICE);
         ComponentName componentName = new ComponentName(context.getApplicationContext(), AlarmJob.class.getName());
         JobInfo.Builder builder = new JobInfo.Builder((int) System.currentTimeMillis(), componentName);
@@ -66,11 +71,11 @@ public class AlarmJob extends JobService {
         }
         JobInfo jobInfo = builder
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                .setMinimumLatency(minLatencyMillis)
-                .setOverrideDeadline(maxExecutionDelayMillis)
+                .setMinimumLatency(minLatencyMinutes * MINUTE)
+                .setOverrideDeadline(maxExecutionDelayMinutes * MINUTE)
                 .build();
 
-        Log.d(TAG, "jonInfo --> " + jobInfo.getMinLatencyMillis() / 60 / 1000L);
+        Log.d(TAG, "jonInfo --> " + jobInfo.getMinLatencyMillis() / MINUTE);
 
         int scheduleResult = scheduler.schedule(jobInfo);
         boolean ret = scheduleResult == JobScheduler.RESULT_SUCCESS;

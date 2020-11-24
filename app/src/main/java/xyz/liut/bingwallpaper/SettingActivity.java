@@ -3,12 +3,14 @@ package xyz.liut.bingwallpaper;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.job.JobScheduler;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -151,7 +153,11 @@ public class SettingActivity extends Activity implements View.OnClickListener {
             tvTime.setText(getString(R.string.every_day) + ": " + TextUtils.join("/", timedList));
         }
 
+        // 配置上屏
         refreshSubText();
+
+        // 设置定时
+        timed(timedList);
     }
 
 
@@ -188,6 +194,35 @@ public class SettingActivity extends Activity implements View.OnClickListener {
             tvShowMain.setText("显示本应用桌面图标");
         } else {
             tvShowMain.setText("不显示本应用桌面图标");
+        }
+    }
+
+    /**
+     * 重新设置定时任务
+     *
+     * @param timedList 定时列表
+     */
+    private void timed(List<String> timedList) {
+
+        // 清空定时
+        JobScheduler scheduler = (JobScheduler) getApplication().getSystemService(JOB_SCHEDULER_SERVICE);
+        if (scheduler != null) {
+            scheduler.cancelAll();
+        }
+
+        // 重新定时
+        for (String timed : timedList) {
+            // 时间, 格式: hh:mm
+            String[] times = timed.split(":");
+            int hour = Integer.parseInt(times[0]);
+            int minute = Integer.parseInt(times[1]);
+
+            boolean scheduleResult = AlarmJob.setupTimed(this, hour, minute, 30);
+            if (scheduleResult) {
+                Log.i(TAG, "定时ok");
+            } else {
+                Log.e(TAG, "定时不ok");
+            }
         }
     }
 

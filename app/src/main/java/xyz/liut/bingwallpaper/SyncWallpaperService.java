@@ -180,7 +180,7 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
         scheduler.cancelAll();
 
         if (!bool) {
-            AlarmJob.setupDelay(this, 1000L * 60 * 30, 1000L * 60 * 30 * 2);
+            AlarmJob.setupDelay(this, 30, 30 * 2);
             showMsg("设置壁纸失败，半个多小时后自动重试");
         }
 

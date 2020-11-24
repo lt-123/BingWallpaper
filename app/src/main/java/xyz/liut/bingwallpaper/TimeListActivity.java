@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.TimePickerDialog;
+import android.app.job.JobScheduler;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
@@ -103,6 +104,12 @@ public class TimeListActivity extends Activity implements View.OnClickListener, 
             case R.id.bt_clear_timed:
                 llTimedList.removeAllViews();
                 TimedListManager.clear(this);
+
+                // 清空定时
+                JobScheduler scheduler = (JobScheduler) getApplication().getSystemService(JOB_SCHEDULER_SERVICE);
+                if (scheduler != null) {
+                    scheduler.cancelAll();
+                }
                 break;
 
             // 忽略电池优化
@@ -137,6 +144,9 @@ public class TimeListActivity extends Activity implements View.OnClickListener, 
         }
         builder.append(minute);
         addTime(builder.toString());
+
+        // 添加定时
+        AlarmJob.setupTimed(this, hourOfDay, minute, 30);
 
         saveTimed();
     }
