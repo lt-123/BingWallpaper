@@ -4,7 +4,6 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -143,7 +142,7 @@ public class SourceManager {
     private static void saveAddedSourceList(Context context, List<SourceBean> beans) {
         Set<String> sets = new HashSet<>();
         for (SourceBean bean : beans) {
-            sets.add(bean.getName() + separator + File.separator + bean.getUrl() + separator + bean.getDesc() + separator + bean.isInternal());
+            sets.add(bean.getName() + separator + bean.getUrl() + separator + bean.getDesc() + separator + bean.isInternal());
         }
 
         SpTool tool = SpTool.getDefault(context);

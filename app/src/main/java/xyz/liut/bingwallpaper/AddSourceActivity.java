@@ -2,10 +2,12 @@ package xyz.liut.bingwallpaper;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.widget.EditText;
 import android.widget.ImageView;
 
@@ -25,9 +27,13 @@ import xyz.liut.bingwallpaper.utils.ToastUtil;
  */
 public class AddSourceActivity extends Activity {
 
+    private static final String TAG = "AddSourceActivity";
+
     private ImageView ivWallpaper;
 
     private boolean detectedResult;
+
+    private ProgressDialog progressDialog;
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -41,9 +47,8 @@ public class AddSourceActivity extends Activity {
 
         ivWallpaper = findViewById(R.id.iv_wallpaper);
 
-        if (BuildConfig.DEBUG) {
-            etUrl.setText("https://picsum.photos/1080");
-        }
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("检测中");
 
         // 检测
         findViewById(R.id.bt_test).setOnClickListener(v -> {
@@ -62,10 +67,17 @@ public class AddSourceActivity extends Activity {
                 ToastUtil.showToast(AddSourceActivity.this, "请先通过检测");
             }
         });
+
+        if (BuildConfig.DEBUG) {
+            etName.setText("测试");
+            etUrl.setText("https://picsum.photos/4096");
+            etDesc.setText("测试源");
+        }
     }
 
     // 检测
     private void detectUrl(String url) {
+        progressDialog.show();
         if (TextUtils.isEmpty(url)) {
             ToastUtil.showToast(AddSourceActivity.this, "url 为空");
             return;
@@ -76,17 +88,41 @@ public class AddSourceActivity extends Activity {
             engine.downLoadWallpaper(new IWallpaperEngine.Callback() {
                 @Override
                 public void onSucceed(File file) {
+
+                    Bitmap bitmap;
+                    try {
+                        BitmapFactory.Options options = new BitmapFactory.Options();
+                        options.inJustDecodeBounds = true;
+                        BitmapFactory.decodeFile(file.toString(), options);
+                        options.inJustDecodeBounds = false;
+                        Log.d(TAG, "options.outHeight = " + options.outHeight);
+                        Log.d(TAG, "options.outWidth = " + options.outWidth);
+                        options.inSampleSize = calculateInSampleSize(options.outHeight, options.outWidth);
+                        Log.d(TAG, "options.inSampleSize = " + options.inSampleSize);
+                        options.inPreferredConfig = Bitmap.Config.RGB_565;
+                        bitmap = BitmapFactory.decodeFile(file.toString(), options);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+
+                        ToastUtil.showToast(AddSourceActivity.this, "检测失败： " + e.getMessage());
+                        return;
+                    }
+
+
+                    Bitmap finalBitmap = bitmap;
                     runOnUiThread(() -> {
-                        try {
-                            Bitmap bitmap = BitmapFactory.decodeFile(file.toString());
-                            ivWallpaper.setImageBitmap(bitmap);
+                        if (finalBitmap != null) {
+                            Log.d(TAG, "finalBitmap.Width " + finalBitmap.getWidth());
+                            Log.d(TAG, "finalBitmap.Height " + finalBitmap.getHeight());
+                            ivWallpaper.setImageBitmap(finalBitmap);
                             detectedResult = true;
                             ToastUtil.showToast(AddSourceActivity.this, "检测成功");
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            ToastUtil.showToast(AddSourceActivity.this, "检测失败: " + e.getMessage());
+                        } else {
+                            ToastUtil.showToast(AddSourceActivity.this, "检测失败");
                         }
                     });
+
+                    progressDialog.dismiss();
                 }
 
                 @Override
@@ -98,7 +134,19 @@ public class AddSourceActivity extends Activity {
                 public void onFailed(Exception e) {
                     ToastUtil.showToast(AddSourceActivity.this, e.getMessage());
                     detectedResult = false;
+
+                    progressDialog.dismiss();
                 }
+
+                private int calculateInSampleSize(int w, int h) {
+                    int ivWidth = ivWallpaper.getWidth();
+                    int ivHeight = ivWallpaper.getHeight();
+
+                    Log.d(TAG, "ivWidth " + ivWidth);
+                    Log.d(TAG, "ivHeight " + ivHeight);
+                    return Math.max(h / ivHeight, w / ivWidth);
+                }
+
             });
         }).start();
     }
