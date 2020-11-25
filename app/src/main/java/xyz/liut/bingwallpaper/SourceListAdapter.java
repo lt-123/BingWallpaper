@@ -49,19 +49,23 @@ public class SourceListAdapter extends BaseAdapter {
     public View getView(int i, View view, ViewGroup viewGroup) {
         if (view == null) {
             view = View.inflate(context, R.layout.item_source, null);
-            ViewHolder holder = (ViewHolder) view.getTag();
-            if (holder == null) {
-                holder = new ViewHolder(view);
-            }
-            SourceBean bean = getItem(i);
-            holder.title.setText(bean.getName());
-
-            String subTitle = bean.getDesc();
-            if (TextUtils.isEmpty(subTitle)) {
-                subTitle = bean.getUrl();
-            }
-            holder.subTitle.setText(subTitle);
         }
+        ViewHolder holder = (ViewHolder) view.getTag();
+        if (holder == null) {
+            holder = new ViewHolder(view);
+            view.setTag(holder);
+        }
+
+        SourceBean bean = getItem(i);
+        holder.title.setText(bean.getName());
+
+        String subTitle = bean.getDesc();
+        if (TextUtils.isEmpty(subTitle)) {
+            subTitle = bean.getUrl();
+        } else {
+            subTitle = subTitle + "\n" + bean.getUrl();
+        }
+        holder.subTitle.setText(subTitle);
         return view;
     }
 

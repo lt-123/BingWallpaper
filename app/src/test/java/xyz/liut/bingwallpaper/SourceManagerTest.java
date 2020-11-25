@@ -1,5 +1,6 @@
 package xyz.liut.bingwallpaper;
 
+import android.graphics.BitmapFactory;
 import android.util.Log;
 
 import org.junit.Assert;
@@ -28,6 +29,12 @@ public class SourceManagerTest extends BaseTestCase {
                 @Override
                 public void onSucceed(File file) {
                     Log.d(TAG, "onSucceed() called with: file = [" + file + "]");
+
+                    BitmapFactory.Options options = new BitmapFactory.Options();
+                    options.inJustDecodeBounds = true;
+                    BitmapFactory.decodeFile(file.toString(), options);
+                    Log.d(TAG, "options.outHeight = " + options.outHeight);
+                    Log.d(TAG, "options.outWidth = " + options.outWidth);
                 }
 
                 @Override

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/ll_item"
     style="@style/SettingItem"
     android:layout_width="match_parent"
@@ -9,11 +10,11 @@
     <TextView
         android:id="@+id/tv_title"
         style="@style/SettingItemTitle"
-        android:text="@string/set_lock_screen" />
+        tools:text="title" />
 
     <TextView
         android:id="@+id/tv_sub_title"
         style="@style/SettingItemSubTitle"
-        android:text="@string/set_lock_screen" />
+        tools:text="SettingItemSubTitle" />
 
 </LinearLayout>

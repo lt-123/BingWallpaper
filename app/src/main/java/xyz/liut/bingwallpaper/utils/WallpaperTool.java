@@ -9,7 +9,9 @@ import android.os.Build;
 import android.util.Log;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * 设置壁纸工具
@@ -32,43 +34,50 @@ public class WallpaperTool {
         Log.d(TAG, "screenWidth: " + screenWidth);
         Log.d(TAG, "screenHeight: " + screenHeight);
 
-        Bitmap bitmap = BitmapFactory.decodeFile(jpgFile.getPath());
+        try {
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(jpgFile.toString(), options);
 
-        if (bitmap == null) {
-            throw new Exception("图片格式错误");
+            int height = options.outHeight;
+            int width = options.outWidth;
+
+            Log.d(TAG, "height = " + height);
+            Log.d(TAG, "width = " + width);
+
+            final WallpaperManager wallpaperManager = WallpaperManager.getInstance(context);
+
+//            // 竖屏壁纸
+//            if (height >= width) {
+//                setWallpaper(wallpaperManager, lockScreen, jpgFile);
+////            wallpaperManager.suggestDesiredDimensions(bitmap.getWidth(), bitmap.getHeight());
+//                wallpaperManager.suggestDesiredDimensions(screenWidth, screenHeight);
+//            } else {
+////            Bitmap wallpaper = cropCenter(bitmap, screenWidth, screenHeight);
+//                setWallpaper(wallpaperManager, lockScreen, jpgFile);
+////            wallpaperManager.suggestDesiredDimensions(wallpaper.getWidth(), wallpaper.getHeight());
+//                wallpaperManager.suggestDesiredDimensions(screenWidth, screenHeight);
+//            }
+
+            setWallpaper(wallpaperManager, lockScreen, jpgFile);
+        } catch (Exception e) {
+            throw new Exception("图片格式错误", e);
         }
-        Log.i(TAG, "bitmapWidth: " + bitmap.getWidth());
-        Log.i(TAG, "bitmapHeight: " + bitmap.getHeight());
-
-        final WallpaperManager wallpaperManager = WallpaperManager.getInstance(context);
-
-        // 竖屏壁纸
-        if (bitmap.getHeight() >= bitmap.getWidth()) {
-            setWallpaper(wallpaperManager, lockScreen, bitmap);
-//            wallpaperManager.suggestDesiredDimensions(bitmap.getWidth(), bitmap.getHeight());
-            wallpaperManager.suggestDesiredDimensions(screenWidth, screenHeight);
-        } else {
-//            Bitmap wallpaper = cropCenter(bitmap, screenWidth, screenHeight);
-            setWallpaper(wallpaperManager, lockScreen, bitmap);
-//            wallpaperManager.suggestDesiredDimensions(wallpaper.getWidth(), wallpaper.getHeight());
-            wallpaperManager.suggestDesiredDimensions(screenWidth, screenHeight);
-            bitmap.recycle();
-        }
-        bitmap.recycle();
     }
 
-    private static void setWallpaper(WallpaperManager wallpaperManager, boolean lockScreen, Bitmap bitmap) throws IOException {
+    private static void setWallpaper(WallpaperManager wallpaperManager, boolean lockScreen, File file) throws IOException {
+        InputStream is = new FileInputStream(file);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && lockScreen) {
-            wallpaperManager.setBitmap(
-                    bitmap,
+            wallpaperManager.setStream(
+                    is,
                     null,
                     true,
                     WallpaperManager.FLAG_LOCK | WallpaperManager.FLAG_SYSTEM
             );
         } else {
-            wallpaperManager.setBitmap(bitmap);
+            wallpaperManager.setStream(is);
         }
-
+        is.close();
     }
 
 
