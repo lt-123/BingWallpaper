@@ -1,6 +1,7 @@
 package xyz.liut.bingwallpaper;
 
 import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.app.job.JobScheduler;
 import android.content.Context;
@@ -138,7 +139,7 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
         boolean isSave = spTool.get(Constants.Default.KEY_SAVE, false);
         if (isSave) {
             try {
-                File dir = new File(Constants.Config.WALLPAPER_SAVE_PATH);
+                File dir = new File(Constants.Config.WALLPAPER_SAVE_PATH + engine.engineName() + File.separator);
                 if (!dir.exists()) {
                     boolean r = dir.mkdirs();
                     Log.d(TAG, "创建文件夹: " + r);
@@ -149,10 +150,10 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
                     Log.d(TAG, "dest ret: " + ret);
 
                     if (!ret) {
-                        showMsg("保存文件失败");
+                        showMsg("保存文件失败: " + dest);
                     }
                 } else {
-                    Log.e(TAG, "创建文件夹失败");
+                    Log.e(TAG, "创建文件夹失败: " + dir);
 
                 }
 
@@ -222,8 +223,12 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
             builder = new Notification.Builder(this);
         }
 
+        Intent intent = new Intent(this, SettingActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 11, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
         builder
                 .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
                 .setSmallIcon(R.drawable.ic_bing)
                 .setContentTitle(engine.engineName())
                 .setContentText(msg);

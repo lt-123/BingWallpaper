@@ -24,6 +24,7 @@
         android:allowBackup="false"
         android:icon="@mipmap/ic_bing"
         android:label="@string/app_name"
+        android:requestLegacyExternalStorage="true"
         android:supportsRtl="false"
         android:usesCleartextTraffic="true"
         tools:ignore="UnusedAttribute">

@@ -30,7 +30,7 @@ public class DirectEngine extends AbstractWallpaperEngine {
         this.url = url;
         this.path = path;
 
-        format = new SimpleDateFormat("yyyy-MM-dd'.jpg'", Locale.CHINESE);
+        format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss'.jpg'", Locale.CHINESE);
     }
 
     @Override
