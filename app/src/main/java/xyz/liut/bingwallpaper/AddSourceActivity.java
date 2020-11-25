@@ -49,6 +49,7 @@ public class AddSourceActivity extends Activity {
 
         progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("检测中");
+        progressDialog.setCancelable(false);
 
         // 检测
         findViewById(R.id.bt_test).setOnClickListener(v -> {
