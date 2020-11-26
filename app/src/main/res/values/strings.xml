@@ -5,4 +5,40 @@
 
     <string name="manual_set_label">同步壁纸</string>
 
+    <string name="wallpaper_source">选择壁纸来源</string>
+    <string name="update_time">设置定时更新</string>
+    <string name="every_day">每天</string>
+    <string name="save_path">保存壁纸到手机</string>
+    <string name="no_save">不保存</string>
+    <string name="set_lock_screen">同时设置锁屏</string>
+    <string name="bing_search">必应搜索</string>
+    <string name="setup_now">立即设置</string>
+    <string name="wallpaper_source_list">壁纸源列表</string>
+    <string name="add_source">添加源</string>
+    <string name="about">关于</string>
+    <string name="see_source_code">查看源码</string>
+    <string name="ok">好</string>
+    <string name="hide_me">隐藏桌面图标</string>
+    <string name="no_hide">不隐藏</string>
+    <string name="show_manual">显示手动切换桌面图标</string>
+    <string name="hide">隐藏</string>
+    <string name="clear_wallpaper">清除壁纸</string>
+    <string name="please_input_name">请输入名称(必须且不可重复)</string>
+    <string name="please_input_url">请输入url</string>
+    <string name="add">添加</string>
+    <string name="please_input_desc">请输入描述(可选)</string>
+    <string name="test">检测</string>
+    <string name="add_source_doc">仅支持添加直链源, 名称随意但不可重复. 添加前请先检测, 检测结果会出现在下方, 出现壁纸图片即检测通过</string>
+    <string name="sync_wallpaper">Sync Wallpaper</string>
+    <string name="ignore_battery">申请忽略电池优化</string>
+    <string name="add_timed">添加定时</string>
+    <string name="clear_timed">清空定时</string>
+    <string name="add_timed_desc">点击添加定时按钮, 可以添加定时任务</string>
+    <string name="title_timed_list">设置定时任务</string>
+    <string name="desc_ignore_battery_0">注意\n一些ROM对定时任务限制的很严格, 为了定时功的稳定, 请执行以下操作</string>
+    <string name="desc_ignore_battery_1">1. 忽略电池优化, 点击下面按钮即可</string>
+    <string name="desc_ignore_battery_2">2. 打开手机自带手机管家之类的软件, 在其中将本软件加入白名单</string>
+    <string name="complete_ignore_battery">已完成忽略电池优化</string>
+    <string name="no_timed">无定时任务</string>
+
 </resources>

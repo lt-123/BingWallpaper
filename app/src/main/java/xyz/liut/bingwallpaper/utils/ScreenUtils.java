@@ -1,8 +1,10 @@
-package xyz.liut.bingwallpaper;
+package xyz.liut.bingwallpaper.utils;
 
 import android.content.Context;
 
 /**
+ * 屏幕工具
+ * <p>
  * Create by liut
  * 2019-06-16 11:22
  */

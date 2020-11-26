@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".SettingActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/ll_source"
+            style="@style/SettingItem"
+            android:orientation="vertical">
+
+            <TextView
+                style="@style/SettingItemTitle"
+                android:text="@string/wallpaper_source" />
+
+            <TextView
+                android:id="@+id/tv_source"
+                style="@style/SettingItemSubTitle"
+                android:text="@string/bing_search" />
+
+        </LinearLayout>
+
+        <View style="@style/SettingItemLine" />
+
+
+        <LinearLayout
+            android:id="@+id/ll_time"
+            style="@style/SettingItem"
+            android:orientation="vertical">
+
+            <TextView
+                style="@style/SettingItemTitle"
+                android:text="@string/update_time" />
+
+            <TextView
+                android:id="@+id/tv_time"
+                style="@style/SettingItemSubTitle"
+                android:text="@string/every_day" />
+
+        </LinearLayout>
+
+        <View style="@style/SettingItemLine" />
+
+
+        <LinearLayout
+            android:id="@+id/ll_save_path"
+            style="@style/SettingItem"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/SettingItemTitle"
+                    android:text="@string/save_path" />
+
+                <TextView
+                    android:id="@+id/tv_save_path"
+                    style="@style/SettingItemSubTitle"
+                    android:text="@string/no_save" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/sw_save"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center" />
+
+        </LinearLayout>
+
+        <View style="@style/SettingItemLine" />
+
+        <LinearLayout
+            android:id="@+id/ll_set_lock_screen"
+            style="@style/SettingItem"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/SettingItemTitle"
+                    android:text="@string/set_lock_screen" />
+
+                <TextView
+                    android:id="@+id/tv_set_lock_screen"
+                    style="@style/SettingItemSubTitle"
+                    android:text="@string/set_lock_screen" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/sw_lock_screen"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center" />
+
+        </LinearLayout>
+
+
+        <View style="@style/SettingItemLine" />
+
+
+        <LinearLayout
+            android:id="@+id/ll_show_manual"
+            style="@style/SettingItem"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/SettingItemTitle"
+                    android:text="@string/show_manual" />
+
+                <TextView
+                    android:id="@+id/tv_show_manual"
+                    style="@style/SettingItemSubTitle"
+                    android:text="@string/hide" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/sw_show_manual"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center" />
+
+        </LinearLayout>
+
+        <View style="@style/SettingItemLine" />
+
+        <LinearLayout
+            android:id="@+id/ll_hide"
+            style="@style/SettingItem"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/SettingItemTitle"
+                    android:text="@string/hide_me" />
+
+                <TextView
+                    android:id="@+id/tv_hide_main"
+                    style="@style/SettingItemSubTitle"
+                    android:text="@string/no_hide" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/sw_show_main"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center" />
+
+        </LinearLayout>
+
+        <View style="@style/SettingItemLine" />
+
+
+        <Button
+            android:id="@+id/bt_setup_now"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:text="@string/setup_now" />
+
+        <Button
+            android:id="@+id/bt_clear"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            android:text="@string/clear_wallpaper" />
+
+
+    </LinearLayout>
+
+</ScrollView>

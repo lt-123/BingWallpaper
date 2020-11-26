@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="xyz.liut.bingwallpaper">
 
     <uses-permission android:name="android.permission.INTERNET" />
@@ -8,31 +9,55 @@
     <uses-permission android:name="android.permission.SET_WALLPAPER_HINTS" />
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
 
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
 
     <application
+        android:name=".App"
         android:allowBackup="false"
         android:icon="@mipmap/ic_bing"
         android:label="@string/app_name"
-        android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:requestLegacyExternalStorage="true"
+        android:supportsRtl="false"
+        android:usesCleartextTraffic="true"
+        tools:ignore="UnusedAttribute">
 
-        <activity
+        <!-- 桌面图标 -->
+        <activity-alias
             android:name=".MainActivity"
             android:excludeFromRecents="true"
-            android:exported="true">
+            android:exported="true"
+            android:targetActivity=".SettingActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- 真正的程序入口 / 设置壁纸入口 / 长按瓷砖入口 -->
+        <activity
+            android:name=".SettingActivity"
+            android:excludeFromRecents="true">
             <intent-filter>
                 <action android:name="android.intent.action.SET_WALLPAPER" />
+                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
 
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
+        <!-- 手动设置图标 默认不启用 -->
         <activity
             android:name=".ManualSetActivity"
+            android:enabled="false"
             android:excludeFromRecents="true"
             android:label="@string/manual_set_label"
             android:theme="@style/NoActionBar">
@@ -44,20 +69,49 @@
 
         </activity>
 
+        <!-- 源列表 -->
+        <activity android:name=".SourceListActivity" />
+
+        <!-- 添加源 -->
+        <activity android:name=".AddSourceActivity" />
+
+        <!-- 定时列表 -->
+        <activity android:name=".TimeListActivity" />
+
+        <!-- 关于 -->
+        <activity android:name=".AboutActivity" />
+
+        <!-- 同步壁纸服务 -->
         <service android:name=".SyncWallpaperService" />
 
+
+        <!-- 定时器 -->
         <service
             android:name=".AlarmJob"
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
-        <receiver android:name=".MainBroadcastReceiver">
+        <!-- 快速设置瓷砖 -->
+        <service
+            android:name=".SyncTileService"
+            android:description="@string/app_name"
+            android:exported="true"
+            android:icon="@drawable/ic_bing"
+            android:label="@string/sync_wallpaper"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
 
-                <action android:name="android.intent.action.DATE_CHANGED" />
 
+        <!-- 广播接收 -->
+        <receiver
+            android:name=".MainBroadcastReceiver"
+            android:exported="true">
+            <intent-filter>
                 <action android:name="android.provider.Telephony.SECRET_CODE" />
 
+                <!-- 安全码启动 -->
                 <data
                     android:host="2464"
                     android:scheme="android_secret_code" />

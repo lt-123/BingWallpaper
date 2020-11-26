@@ -1,209 +1,247 @@
 package xyz.liut.bingwallpaper;
 
-import android.app.IntentService;
-import android.app.WallpaperManager;
-import android.app.job.JobInfo;
+import android.app.Notification;
+import android.app.PendingIntent;
+import android.app.Service;
 import android.app.job.JobScheduler;
-import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.os.Environment;
-import android.os.Handler;
-import android.os.Looper;
+import android.os.Build;
+import android.os.IBinder;
 import android.util.Log;
-import android.widget.Toast;
 
-import org.json.JSONObject;
+import androidx.annotation.Nullable;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
+import java.util.List;
 
-public class SyncWallpaperService extends IntentService {
+import xyz.liut.bingwallpaper.bean.SourceBean;
+import xyz.liut.bingwallpaper.engine.EngineFactory;
+import xyz.liut.bingwallpaper.engine.IWallpaperEngine;
+import xyz.liut.bingwallpaper.utils.SpTool;
+import xyz.liut.bingwallpaper.utils.ToastUtil;
+import xyz.liut.bingwallpaper.utils.WallpaperTool;
+
+/**
+ * 同步壁纸
+ */
+public class SyncWallpaperService extends Service implements IWallpaperEngine.Callback {
 
     private static final String TAG = "SyncWallpaperService";
 
     /**
-     * API URL
+     * 失败重试次数
      */
-    private static final String BING_WALLPAPER_API = "https://www.bing.com/HPImageArchive.aspx?format=js&n=1";
+    private volatile int retryTime;
+
+    private volatile IWallpaperEngine engine;
+
+    private SpTool spTool;
 
     /**
-     * 连接超时时间
+     * 启动
      */
-    public static final int CONNECT_TIMEOUT = 3 * 1000;
-    /**
-     * 读取超时时间
-     */
-    public static final int READ_TIMEOUT = 8 * 1000;
-
-    private Handler handler;
-
-    @SuppressWarnings("unused")
-    public SyncWallpaperService() {
-        super("SyncWallpaperService");
-    }
-
-    @SuppressWarnings("unused")
-    public SyncWallpaperService(String name) {
-        super(name);
+    public static void start(Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(new Intent(context.getApplicationContext(), SyncWallpaperService.class));
+        } else {
+            context.startService(new Intent(context.getApplicationContext(), SyncWallpaperService.class));
+        }
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
+        spTool = SpTool.getDefault(this);
 
-        handler = new Handler(Looper.getMainLooper());
+        // 默认源
+        SourceBean sourceBean = SourceManager.getDefaultSource(this);
+
+        // 根据源获取引擎
+        engine = EngineFactory.getDefault(this).getEngineBySourceBean(sourceBean);
     }
 
     @Override
-    protected void onHandleIntent(Intent intent) {
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        new Thread(this::syncWallpaper).start();
+        return START_NOT_STICKY;
+    }
+
+    private void syncWallpaper() {
         Log.d(TAG, "onHandleIntent: start ====");
 
-        boolean result = false;
+        setNotification("下载中...");
+
+        // 开始下载
+        engine.downLoadWallpaper(this);
 
         try {
-            String wallpaperPath = Environment.getExternalStorageDirectory() + File.separator + "bingWallpaper";
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        stopSelf();
+    }
 
-            File fileDir = new File(wallpaperPath);
-            if (!fileDir.exists()) {
-                //noinspection ResultOfMethodCallIgnored
-                fileDir.mkdirs();
-            }
+    @Override
+    public void onSucceed(File file) {
+        retryTime = 0;
 
-            // ----------- 获取 URL
+        try {
+            boolean setLockScreen = SpTool.getDefault(this).get(Constants.Default.KEY_LOCK_SCREEN, false);
+            WallpaperTool.setFile2Wallpaper(SyncWallpaperService.this, file, setLockScreen);
+            showMsg("设置壁纸成功");
 
-            HttpURLConnection urlConnection = (HttpURLConnection) new URL(BING_WALLPAPER_API).openConnection();
-            urlConnection.setConnectTimeout(CONNECT_TIMEOUT);
-            urlConnection.setReadTimeout(READ_TIMEOUT);
-            String resp = new BufferedReader(new InputStreamReader(urlConnection.getInputStream())).readLine();
-            String jpgUrl = new JSONObject(resp)
-                    .getJSONArray("images")
-                    .getJSONObject(0)
-                    .getString("url")
-                    .replace("1920x1080", "1080x1920");
-            Log.d(TAG, "jpgUrl: " + jpgUrl);
+            // 设置定时
+            setJob(true);
 
-            showToastMsg("获取URL成功，开始下载");
-
-            // ----------- 保存文件
-            HttpURLConnection wallpaperConn = (HttpURLConnection) new URL("https://cn.bing.com" + jpgUrl).openConnection();
-            wallpaperConn.setConnectTimeout(CONNECT_TIMEOUT);
-            wallpaperConn.setReadTimeout(READ_TIMEOUT);
-
-            int fileLength = wallpaperConn.getContentLength();
-
-            String fileName = wallpaperPath + File.separator + new SimpleDateFormat("yyyy-MM-dd", Locale.CHINESE).format(new Date()) + ".jpg";
-
-            File jpgFile = new File(fileName);
-            Log.i(TAG, "jpgFile: " + jpgFile.getPath());
-
-            FileOutputStream os = new FileOutputStream(jpgFile);
-            InputStream is = wallpaperConn.getInputStream();
-
-            int len;
-            byte[] buffer = new byte[1024];
-            while ((len = is.read(buffer)) != -1) {
-                os.write(buffer, 0, len);
-            }
-
-            // ---------- 设置壁纸
-
-            if (fileLength == jpgFile.length()) {
-                setFile2Wallpaper(jpgFile);
-                result = true;
-            } else {
-                showToastMsg("下载壁纸失败");
-                //noinspection ResultOfMethodCallIgnored
-                jpgFile.delete();
-            }
         } catch (Exception e) {
             e.printStackTrace();
-            showToastMsg("壁纸设置失败：" + e.getMessage());
+            showMsg("不支持设置壁纸: " + e.getMessage());
         }
 
-        // --------------- 定时
+        // 保存文件
+        saveFile(file);
 
+    }
+
+
+    @Override
+    public void onMessage(String msg) {
+        showMsg(msg);
+    }
+
+    @Override
+    public void onFailed(Exception e) {
+        Log.d(TAG, "onFailed() called with: msg = [" + e.getMessage() + "], retryTime=" + retryTime);
+        e.printStackTrace();
+
+        if (retryTime < 3) {
+            //noinspection NonAtomicOperationOnVolatileField
+            retryTime++;
+            showMsg("下载出错: " + e.getMessage() + ", 正在重试(" + retryTime + "/3)...");
+            engine.downLoadWallpaper(this);
+        } else {
+            showMsg("同步壁纸失败");
+
+            setJob(false);
+        }
+
+    }
+
+
+    /**
+     * 保存壁纸文件
+     *
+     * @param file 文件
+     */
+    private void saveFile(File file) {
+        boolean isSave = spTool.get(Constants.Default.KEY_SAVE, false);
+        if (isSave) {
+            try {
+                File dir = new File(Constants.Config.WALLPAPER_SAVE_PATH + engine.engineName() + File.separator);
+                if (!dir.exists()) {
+                    boolean r = dir.mkdirs();
+                    Log.d(TAG, "创建文件夹: " + r);
+                }
+                if (dir.exists()) {
+                    File dest = new File(dir, file.getName());
+                    boolean ret = file.renameTo(dest);
+                    Log.d(TAG, "dest ret: " + ret);
+
+                    if (!ret) {
+                        showMsg("保存文件失败: " + dest);
+                    }
+                } else {
+                    Log.e(TAG, "创建文件夹失败: " + dir);
+
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                showMsg("保存文件失败: " + e.getMessage());
+            }
+        } else {
+            //noinspection ResultOfMethodCallIgnored
+            file.delete();
+        }
+    }
+
+    /**
+     * 设置定时任务
+     *
+     * @param bool 是否成功的
+     */
+    private void setJob(boolean bool) {
         JobScheduler scheduler = (JobScheduler) getApplication().getSystemService(JOB_SCHEDULER_SERVICE);
         if (scheduler == null) {
-            showToastMsg("不支持自动同步壁纸");
+            showMsg("不支持自动同步壁纸");
             return;
         }
         scheduler.cancelAll();
 
-        ComponentName componentName = new ComponentName(getApplication(), AlarmJob.class.getName());
-        JobInfo.Builder builder = new JobInfo.Builder(1123, componentName)
-                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
-//                .setPrefetch(true);   // 开启会崩溃？
-        if (result) {
-            Calendar now = Calendar.getInstance();
-            Log.d(TAG, "time " + now.getTime());
-            Calendar targetTime = (Calendar) now.clone();
-            targetTime.set(Calendar.HOUR_OF_DAY, 0);
-            targetTime.set(Calendar.MINUTE, 0);
-            targetTime.set(Calendar.SECOND, 0);
-            targetTime.set(Calendar.MILLISECOND, 0);
+        if (!bool) {
+            AlarmJob.setupDelay(this, 30, 30 * 2);
+            showMsg("设置壁纸失败，半个多小时后自动重试");
+        }
 
-            if (targetTime.before(now)) {
-                targetTime.add(Calendar.DATE, 1);
+        List<String> timedList = TimedListManager.loadTimedList(this);
+        for (String timed : timedList) {
+            // 时间, 格式: hh:mm
+            String[] times = timed.split(":");
+            int hour = Integer.parseInt(times[0]);
+            int minute = Integer.parseInt(times[1]);
+
+            boolean scheduleResult = AlarmJob.setupTimed(this, hour, minute, 30);
+            if (scheduleResult) {
+                Log.i(TAG, "定时ok");
+            } else {
+                showMsg("不支持自动同步壁纸");
+                break;
             }
-            long latencyTime = targetTime.getTimeInMillis() - now.getTimeInMillis();
-            builder.setMinimumLatency(latencyTime).setOverrideDeadline(latencyTime + 1000L * 60 * 30);
-        } else {
-            builder.setMinimumLatency(1000L * 60 * 30).setOverrideDeadline(1000L * 60 * 30 * 2);
-            showToastMsg("设置壁纸失败，半个多小时后自动重试");
         }
-
-        JobInfo jobInfo = builder.build();
-
-        Log.d(TAG, "jonInfo --> " + jobInfo.getMinLatencyMillis() / 60 / 1000L);
-
-        int scheduleResult = scheduler.schedule(jobInfo);
-        if (scheduleResult == JobScheduler.RESULT_SUCCESS) {
-            Log.i(TAG, "定时ok");
-        } else {
-            showToastMsg("-不支持自动同步壁纸-");
-        }
-
-
     }
 
     /**
-     * 设置壁纸
+     * 显示通知 / toast
      *
-     * @param jpgFile -
-     * @throws IOException -
+     * @param msg content
      */
-    private void setFile2Wallpaper(File jpgFile) throws IOException {
-
-        final int screenWidth = ScreenUtils.getScreenWidth(getApplicationContext());
-        final int screenHeight = ScreenUtils.getScreenHeight(getApplicationContext());
-
-        final WallpaperManager wallpaperManager = WallpaperManager.getInstance(getApplicationContext());
-        wallpaperManager.suggestDesiredDimensions(screenWidth, screenHeight);
-
-        // 4.缩放图片。
-        Bitmap bitmap = BitmapFactory.decodeFile(jpgFile.getPath());
-
-        // 5.设为壁纸。
-        wallpaperManager.setBitmap(bitmap);
-
-        showToastMsg("设置成功，壁纸已保存");
+    private void showMsg(String msg) {
+        setNotification(msg);
+        ToastUtil.showToast(this, msg);
     }
 
-    private void showToastMsg(final String msg) {
-        Log.d(TAG, msg);
-        handler.post(() -> Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show());
+    /**
+     * 显示通知
+     */
+    private void setNotification(String msg) {
+        Notification.Builder builder;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            builder = new Notification.Builder(this, Constants.Config.CHANNEL_ONE_ID);
+        } else {
+            builder = new Notification.Builder(this);
+        }
+
+        Intent intent = new Intent(this, SettingActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 11, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        builder
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .setSmallIcon(R.drawable.ic_bing)
+                .setContentTitle(engine.engineName())
+                .setContentText(msg);
+
+        startForeground(1, builder.build());
+
+    }
+
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
     }
 
 
