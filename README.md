@@ -3,7 +3,7 @@
 ![GitHub Workflow Status deploy](https://img.shields.io/github/workflow/status/lt-123/BingWallpaper/deploy)
 ![GitHub Workflow Status test](https://img.shields.io/github/workflow/status/lt-123/BingWallpaper/test)
 ![GitHub language count](https://img.shields.io/github/languages/count/lt-123/BingWallpaper)
-![license](https://img.shields.io/github/github/license/lt-123/BingWallpaper)
+![GitHub](https://img.shields.io/github/license/lt-123/BingWallpaper)
 ![www.liut.xyz](https://img.shields.io/badge/blog-@liut.xyz-yellow.svg)
 [![Download](https://img.shields.io/badge/Download-酷安-red.svg)](https://www.coolapk.com/apk/182374)
 ![GitHub Repo stars](https://img.shields.io/github/stars/lt-123/BingWallpaper?style=social)
