@@ -45,8 +45,7 @@
         <!-- 真正的程序入口 / 设置壁纸入口 / 长按瓷砖入口 -->
         <activity
             android:name=".SettingActivity"
-            android:excludeFromRecents="true"
-            android:exported="true">
+            android:excludeFromRecents="true">
             <intent-filter>
                 <action android:name="android.intent.action.SET_WALLPAPER" />
                 <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
@@ -95,6 +94,7 @@
         <service
             android:name=".SyncTileService"
             android:description="@string/app_name"
+            android:exported="true"
             android:icon="@drawable/ic_bing"
             android:label="@string/sync_wallpaper"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
@@ -105,7 +105,9 @@
 
 
         <!-- 广播接收 -->
-        <receiver android:name=".MainBroadcastReceiver">
+        <receiver
+            android:name=".MainBroadcastReceiver"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.provider.Telephony.SECRET_CODE" />
 

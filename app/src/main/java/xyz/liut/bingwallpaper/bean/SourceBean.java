@@ -16,7 +16,7 @@ public class SourceBean implements Serializable {
     /**
      * 是否为内部源
      */
-    boolean internal;
+    private final boolean internal;
 
     private final String name;
 

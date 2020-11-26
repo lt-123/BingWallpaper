@@ -26,7 +26,7 @@ public class App extends Application {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
             List<NotificationChannel> channels = manager.getNotificationChannels();
-            Log.i("xxxxxxxx", "setupNotificationChannel: " + channels);
+            Log.i("APP", "setupNotificationChannel: " + channels);
             if (channels == null || channels.size() == 0) {
                 NotificationChannel notificationChannel = new NotificationChannel(
                         Constants.Config.CHANNEL_ONE_ID,

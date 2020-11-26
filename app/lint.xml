@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+
+
+    <issue id="NonConstantResourceId" severity="ignore" />
+
+    <issue id="SwitchStatementWithTooFewBranches" severity="ignore" />
+
+
+    <issue id="ButtonStyle" severity="ignore" />
+
+    <issue id="ContentDescription" severity="ignore" />
+
+    <issue id="Autofill" severity="ignore" />
+
+    <issue id="TextFields" severity="ignore" />
+
+</lint>

@@ -45,7 +45,7 @@ public interface Constants {
         /**
          * 显示主图标 KEY
          */
-        String KEY_SHOW_MAIN = "KEY_SHOW_MAIN";
+        String KEY_HIDE_MAIN = "KEY_SHOW_MAIN";
     }
 
 

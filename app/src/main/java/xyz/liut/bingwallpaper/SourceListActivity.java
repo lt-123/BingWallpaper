@@ -1,6 +1,5 @@
 package xyz.liut.bingwallpaper;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -80,7 +79,6 @@ public class SourceListActivity extends Activity {
     }
 
     @SuppressWarnings("SwitchStatementWithTooFewBranches")
-    @SuppressLint("NonConstantResourceId")
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {

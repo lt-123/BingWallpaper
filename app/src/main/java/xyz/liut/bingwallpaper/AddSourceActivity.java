@@ -78,12 +78,11 @@ public class AddSourceActivity extends Activity {
 
     // 检测
     private void detectUrl(String url) {
-        progressDialog.show();
         if (TextUtils.isEmpty(url)) {
             ToastUtil.showToast(AddSourceActivity.this, "url 为空");
             return;
         }
-        ToastUtil.showToast(AddSourceActivity.this, "开始检测");
+        progressDialog.show();
         new Thread(() -> {
             DirectEngine engine = new DirectEngine("addSource", url, getExternalCacheDir().toString());
             engine.downLoadWallpaper(new IWallpaperEngine.Callback() {

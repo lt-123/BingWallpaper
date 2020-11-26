@@ -35,9 +35,9 @@ public class SettingActivity extends Activity implements View.OnClickListener {
     private static final String TAG = "MainActivity";
 
 
-    private TextView tvSource, tvTime, tvSave, tvSetLockScreen, tvShowManual, tvShowMain;
+    private TextView tvSource, tvTime, tvSave, tvSetLockScreen, tvShowManual, tvHideMain;
 
-    private Switch swSave, swLockScreen, swShowManual, swShowMain;
+    private Switch swSave, swLockScreen, swShowManual, swHideMain;
 
     private SpTool spTool;
 
@@ -53,12 +53,12 @@ public class SettingActivity extends Activity implements View.OnClickListener {
         tvSave = findViewById(R.id.tv_save_path);
         tvSetLockScreen = findViewById(R.id.tv_set_lock_screen);
         tvShowManual = findViewById(R.id.tv_show_manual);
-        tvShowMain = findViewById(R.id.tv_show_main);
+        tvHideMain = findViewById(R.id.tv_hide_main);
 
         swSave = findViewById(R.id.sw_save);
         swLockScreen = findViewById(R.id.sw_lock_screen);
         swShowManual = findViewById(R.id.sw_show_manual);
-        swShowMain = findViewById(R.id.sw_show_main);
+        swHideMain = findViewById(R.id.sw_show_main);
 
         findViewById(R.id.ll_source).setOnClickListener(this);
         findViewById(R.id.ll_time).setOnClickListener(this);
@@ -66,7 +66,7 @@ public class SettingActivity extends Activity implements View.OnClickListener {
         swSave.setOnClickListener(this);
         swLockScreen.setOnClickListener(this);
         swShowManual.setOnClickListener(this);
-        swShowMain.setOnClickListener(this);
+        swHideMain.setOnClickListener(this);
 
         findViewById(R.id.bt_setup_now).setOnClickListener(this);
         findViewById(R.id.bt_clear).setOnClickListener(this);
@@ -113,8 +113,8 @@ public class SettingActivity extends Activity implements View.OnClickListener {
             case R.id.sw_show_main:
                 ComponentUtil.setComponentEnable(this,
                         new ComponentName(BuildConfig.APPLICATION_ID, "xyz.liut.bingwallpaper.MainActivity"),
-                        swShowMain.isChecked());
-                savePreference(Constants.Default.KEY_SHOW_MAIN, swShowMain.isChecked());
+                        !swHideMain.isChecked());
+                savePreference(Constants.Default.KEY_HIDE_MAIN, swHideMain.isChecked());
                 refreshSubText();
                 break;
 
@@ -140,11 +140,11 @@ public class SettingActivity extends Activity implements View.OnClickListener {
         boolean save = getPreference(Constants.Default.KEY_SAVE, false);
         boolean lockScreen = getPreference(Constants.Default.KEY_LOCK_SCREEN, true);
         boolean showManual = getPreference(Constants.Default.KEY_SHOW_MANUAL_SYNC, false);
-        boolean showMain = getPreference(Constants.Default.KEY_SHOW_MAIN, true);
+        boolean hideMain = getPreference(Constants.Default.KEY_HIDE_MAIN, false);
         swSave.setChecked(save);
         swLockScreen.setChecked(lockScreen);
         swShowManual.setChecked(showManual);
-        swShowMain.setChecked(showMain);
+        swHideMain.setChecked(hideMain);
 
         List<String> timedList = TimedListManager.loadTimedList(this);
         if (timedList.size() == 0) {
@@ -190,10 +190,10 @@ public class SettingActivity extends Activity implements View.OnClickListener {
             tvShowManual.setText("不显示\"手动同步\"桌面图标");
         }
 
-        if (swShowMain.isChecked()) {
-            tvShowMain.setText("显示本应用桌面图标");
+        if (swHideMain.isChecked()) {
+            tvHideMain.setText("隐藏应用桌面图标");
         } else {
-            tvShowMain.setText("不显示本应用桌面图标");
+            tvHideMain.setText("不隐藏应用桌面图标");
         }
     }
 

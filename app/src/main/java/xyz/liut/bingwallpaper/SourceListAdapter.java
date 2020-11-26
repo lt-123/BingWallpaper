@@ -71,7 +71,7 @@ public class SourceListAdapter extends BaseAdapter {
 
     private static class ViewHolder {
 
-        TextView title, subTitle;
+        final TextView title, subTitle;
 
         public ViewHolder(View view) {
             title = view.findViewById(R.id.tv_title);

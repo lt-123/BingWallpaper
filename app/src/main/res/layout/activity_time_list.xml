@@ -8,7 +8,9 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/add_timed_desc" />
+        android:text="@string/add_timed_desc"
+        android:textColor="#333"
+        android:textSize="14sp" />
 
     <LinearLayout
         android:id="@+id/ll_timed_list"
@@ -35,7 +37,15 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:layout_marginBottom="8dp"
-        android:text="@string/desc_ignore_battery"
+        android:text="@string/desc_ignore_battery_0"
+        android:textColor="@color/colorAccent" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="8dp"
+        android:text="@string/desc_ignore_battery_1"
         android:textColor="@color/colorAccent" />
 
     <Button
@@ -44,5 +54,13 @@
         android:layout_height="wrap_content"
         android:enabled="false"
         android:text="@string/ignore_battery" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="8dp"
+        android:text="@string/desc_ignore_battery_2"
+        android:textColor="@color/colorAccent" />
 
 </LinearLayout>

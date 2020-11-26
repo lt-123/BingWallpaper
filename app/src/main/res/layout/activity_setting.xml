@@ -160,7 +160,7 @@
                     android:text="@string/hide_me" />
 
                 <TextView
-                    android:id="@+id/tv_show_main"
+                    android:id="@+id/tv_hide_main"
                     style="@style/SettingItemSubTitle"
                     android:text="@string/no_hide" />
             </LinearLayout>
