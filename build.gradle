@@ -19,7 +19,7 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:4.1.1'
 
-        classpath "gradle.plugin.xyz.liut.gradleplugin:buildSrc:0.0.5"
+        classpath "gradle.plugin.xyz.liut.gradleplugin:buildSrc:1.0.29-alpha"
     }
 }
 

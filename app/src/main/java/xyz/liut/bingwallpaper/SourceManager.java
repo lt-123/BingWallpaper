@@ -36,6 +36,9 @@ public class SourceManager {
         beans.add(new SourceBean("Lorem Picsum 1080*1920", "https://picsum.photos/1080/1920", "The Lorem Ipsum for photos.", true));
         beans.add(new SourceBean("Lorem Picsum 1080*2160", "https://picsum.photos/1080/2160", "The Lorem Ipsum for photos.", true));
         beans.add(new SourceBean("Lorem Picsum 1080*2260", "https://picsum.photos/1080/2260", "The Lorem Ipsum for photos.", true));
+
+        beans.add(new SourceBean("Lorem Picsum 1080*2340", "https://picsum.photos/1080/2340", "The Lorem Ipsum for photos.", true));
+        beans.add(new SourceBean("Lorem Picsum 1920*2340", "https://picsum.photos/1920/2340", "The Lorem Ipsum for photos.", true));
         beans.add(new SourceBean("Lorem Picsum 4096", "https://picsum.photos/4096", "The Lorem Ipsum for photos. 4096", true));
 
         beans.add(new SourceBean("小歪高清", "https://api.ixiaowai.cn/gqapi/gqapi.php", "小歪API - 随机图片API 随心所动 不再单调", true));

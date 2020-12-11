@@ -5,6 +5,7 @@ import android.app.WallpaperManager;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Rect;
 import android.os.Build;
 import android.util.Log;
 
@@ -47,6 +48,16 @@ public class WallpaperTool {
 
             final WallpaperManager wallpaperManager = WallpaperManager.getInstance(context);
 
+            int w = wallpaperManager.getDesiredMinimumWidth();
+            int h = wallpaperManager.getDesiredMinimumHeight();
+
+            Log.d(TAG, "w = " + w);
+            Log.d(TAG, "h = " + h);
+
+
+//            wallpaperManager.setWallpaperOffsetSteps(1, 1);
+//            wallpaperManager.suggestDesiredDimensions(width, height);
+
 //            // 竖屏壁纸
 //            if (height >= width) {
 //                setWallpaper(wallpaperManager, lockScreen, jpgFile);
@@ -60,17 +71,30 @@ public class WallpaperTool {
 //            }
 
             setWallpaper(wallpaperManager, lockScreen, jpgFile);
+
+//            wallpaperManager.setWallpaperOffsetSteps(1, 1);
+//            wallpaperManager.suggestDesiredDimensions(screenWidth, screenHeight);
+//            wallpaperManager.suggestDesiredDimensions(width, height);
+
+//            wallpaperManager.forgetLoadedWallpaper();
         } catch (Exception e) {
             throw new Exception("图片格式错误", e);
         }
     }
 
     private static void setWallpaper(WallpaperManager wallpaperManager, boolean lockScreen, File file) throws IOException {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(file.toString(), options);
+
+        int height = options.outHeight;
+        int width = options.outWidth;
+
         InputStream is = new FileInputStream(file);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && lockScreen) {
             wallpaperManager.setStream(
                     is,
-                    null,
+                    new Rect(0, 0, width, height),
                     true,
                     WallpaperManager.FLAG_LOCK | WallpaperManager.FLAG_SYSTEM
             );
