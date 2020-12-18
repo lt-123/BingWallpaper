@@ -3,7 +3,7 @@ ext {
     println "versionCode = " + vc
 
     versionCode = vc
-    versionName = "2.0." + vc
+    versionName = "2.1." + vc
 }
 
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
