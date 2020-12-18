@@ -126,20 +126,25 @@ public final class HttpClient {
 
             int fileLength = urlConnection.getContentLength();
 
-            try (InputStream is = urlConnection.getInputStream();
-                 OutputStream os = new FileOutputStream(file)) {
-                byte[] buffer = new byte[1024];
-                int len;
-                while ((len = is.read(buffer)) != -1)
-                    os.write(buffer, 0, len);
+            // 文件已存在
+            if (file.exists() && file.length() == fileLength) {
+                response.setBody(file);
+            } else {
+                try (InputStream is = urlConnection.getInputStream();
+                     OutputStream os = new FileOutputStream(file)) {
+                    byte[] buffer = new byte[1024];
+                    int len;
+                    while ((len = is.read(buffer)) != -1)
+                        os.write(buffer, 0, len);
 
-                if (checkFileLength && file.length() != fileLength) {
-                    //noinspection ResultOfMethodCallIgnored
-                    file.delete();
-                    response.setError(new HttpException("文件下载不完整"));
-                } else {
-                    response.setBody(file);
-                    Log.d(TAG, "download: fileLength = " + fileLength);
+                    if (checkFileLength && file.length() != fileLength) {
+                        //noinspection ResultOfMethodCallIgnored
+                        file.delete();
+                        response.setError(new HttpException("文件下载不完整"));
+                    } else {
+                        response.setBody(file);
+                        Log.d(TAG, "download: fileLength = " + fileLength);
+                    }
                 }
             }
         } catch (Exception e) {
