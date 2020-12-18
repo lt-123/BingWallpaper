@@ -1,15 +1,14 @@
 package xyz.liut.bingwallpaper.engine;
 
+import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.json.JSONObject;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
 
 import xyz.liut.bingwallpaper.http.HttpClient;
 import xyz.liut.bingwallpaper.http.Method;
@@ -21,9 +20,14 @@ import xyz.liut.bingwallpaper.http.Response;
  * Create by liut
  * 2020/10/31
  */
-public class BingWallpaperEngine extends AbstractWallpaperEngine {
+public class BingWallpaperEngine implements IWallpaperEngine {
 
     public static final String NAME = "BingWallpaper";
+
+    public static final String RESOLUTION_UHD = "UHD";
+    public static final String RESOLUTION_1080_1920 = "1080x1920";
+
+
     private static final String TAG = NAME;
 
     /**
@@ -36,13 +40,16 @@ public class BingWallpaperEngine extends AbstractWallpaperEngine {
      */
     private static final String BING_WALLPAPER_API = "https://www.bing.com/HPImageArchive.aspx?format=js&n=1";
 
-    private final SimpleDateFormat format;
-
     private final String path;
+    private final String resolutions;
 
-    public BingWallpaperEngine(@NonNull String path) {
+    public BingWallpaperEngine(@NonNull String path, @Nullable String resolutions) {
         this.path = path;
-        format = new SimpleDateFormat("yyyy-MM-dd'.jpg'", Locale.CHINESE);
+        if (TextUtils.isEmpty(resolutions)) {
+            this.resolutions = RESOLUTION_1080_1920;
+        } else {
+            this.resolutions = resolutions;
+        }
     }
 
     @Override
@@ -53,11 +60,6 @@ public class BingWallpaperEngine extends AbstractWallpaperEngine {
     @Override
     public long updateInterval() {
         return DAY;
-    }
-
-    @Override
-    protected String createFileName() {
-        return engineName() + File.separator + format.format(new Date());
     }
 
     @Override
@@ -73,16 +75,18 @@ public class BingWallpaperEngine extends AbstractWallpaperEngine {
 
             String resp = response.getBody();
             Log.d(TAG, "resp = " + resp);
-            String jpgUrl = new JSONObject(resp)
+
+            String urlbase = new JSONObject(resp)
                     .getJSONArray("images")
                     .getJSONObject(0)
-                    .getString("url")
-                    .replace("1920x1080", "1080x1920");
+                    .getString("urlbase");
+
+            String jpgUrl = BING_URL + urlbase + "_" + resolutions + ".jpg";
 
             callback.onMessage("获取URL成功，开始下载");
 
-            String fileName = path + File.separator + createFileName();
-            Response<File> fileResponse = HttpClient.getInstance().download(BING_URL + jpgUrl, fileName, true);
+            String fileName = path + File.separator + urlbase.split("=")[1] + "_" + resolutions + ".jpg";
+            Response<File> fileResponse = HttpClient.getInstance().download(jpgUrl, fileName, true);
 
             if (fileResponse.getError() != null) {
                 callback.onFailed(fileResponse.getError());

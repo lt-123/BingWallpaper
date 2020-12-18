@@ -1,5 +1,7 @@
-apply plugin: 'com.android.application'
-apply plugin: "xyz.liut.release"
+plugins {
+//    id "xyz.liut.release" version "1.0.38-alpha"
+    id "com.android.application"
+}
 
 android {
     compileSdkVersion 30

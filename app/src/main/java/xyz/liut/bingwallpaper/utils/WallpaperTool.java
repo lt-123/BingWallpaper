@@ -12,7 +12,6 @@ import android.util.Log;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * 设置壁纸工具
@@ -43,85 +42,102 @@ public class WallpaperTool {
             int height = options.outHeight;
             int width = options.outWidth;
 
-            Log.d(TAG, "height = " + height);
-            Log.d(TAG, "width = " + width);
+            Log.d(TAG, "jpg height = " + height);
+            Log.d(TAG, "jpg width = " + width);
 
             final WallpaperManager wallpaperManager = WallpaperManager.getInstance(context);
 
-            int w = wallpaperManager.getDesiredMinimumWidth();
-            int h = wallpaperManager.getDesiredMinimumHeight();
+            int DesiredMinimumWidth = wallpaperManager.getDesiredMinimumWidth();
+            int DesiredMinimumHeight = wallpaperManager.getDesiredMinimumHeight();
 
-            Log.d(TAG, "w = " + w);
-            Log.d(TAG, "h = " + h);
+            Log.d(TAG, "DesiredMinimumWidth = " + DesiredMinimumWidth);
+            Log.d(TAG, "DesiredMinimumHeight = " + DesiredMinimumHeight);
 
+            if (height > width) {
+                setWallpaper(wallpaperManager, lockScreen, jpgFile, width, height);
+            } else {
+                setWallpaper(wallpaperManager, screenWidth, screenHeight, width, height, jpgFile, lockScreen);
+            }
 
-//            wallpaperManager.setWallpaperOffsetSteps(1, 1);
-//            wallpaperManager.suggestDesiredDimensions(width, height);
-
-//            // 竖屏壁纸
-//            if (height >= width) {
-//                setWallpaper(wallpaperManager, lockScreen, jpgFile);
-////            wallpaperManager.suggestDesiredDimensions(bitmap.getWidth(), bitmap.getHeight());
-//                wallpaperManager.suggestDesiredDimensions(screenWidth, screenHeight);
-//            } else {
-////            Bitmap wallpaper = cropCenter(bitmap, screenWidth, screenHeight);
-//                setWallpaper(wallpaperManager, lockScreen, jpgFile);
-////            wallpaperManager.suggestDesiredDimensions(wallpaper.getWidth(), wallpaper.getHeight());
-//                wallpaperManager.suggestDesiredDimensions(screenWidth, screenHeight);
-//            }
-
-            setWallpaper(wallpaperManager, lockScreen, jpgFile);
-
-//            wallpaperManager.setWallpaperOffsetSteps(1, 1);
-//            wallpaperManager.suggestDesiredDimensions(screenWidth, screenHeight);
-//            wallpaperManager.suggestDesiredDimensions(width, height);
-
-//            wallpaperManager.forgetLoadedWallpaper();
         } catch (Exception e) {
             throw new Exception("图片格式错误", e);
         }
     }
 
-    private static void setWallpaper(WallpaperManager wallpaperManager, boolean lockScreen, File file) throws IOException {
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(file.toString(), options);
+    /**
+     * 设置壁纸（横向图片）
+     * <p>
+     * 该函数适用于横向图片， 会把横向图片裁剪， 裁剪结果于屏幕高宽一致
+     *
+     * @param screenWidth  屏幕宽
+     * @param screenHeight 屏幕搞
+     * @param width        壁纸文件宽
+     * @param height       壁纸文件高
+     */
+    private static void setWallpaper(WallpaperManager wallpaperManager, int screenWidth, int screenHeight, int width, int height, File jpgFile, boolean lockScreen) throws Exception {
 
-        int height = options.outHeight;
-        int width = options.outWidth;
+        // 从文件读取图片 按1/整数倍数 缩放
+        Bitmap bitmap = AdjustBitmap.decodeSampledBitmapFromFile(jpgFile, screenWidth, screenHeight, width, height);
+        Log.d(TAG, "bitmap getHeight: " + bitmap.getHeight());
+        Log.d(TAG, "bitmap getWidth: " + bitmap.getWidth());
 
-        InputStream is = new FileInputStream(file);
+        // 缩放 按浮点比例
+        bitmap = AdjustBitmap.sizeBitmapByHeight(bitmap, screenHeight);
+        Log.d(TAG, "bitmap getHeight2: " + bitmap.getHeight());
+        Log.d(TAG, "bitmap getWidth2: " + bitmap.getWidth());
+
+        // 裁剪
+        bitmap = AdjustBitmap.cropBitmapWidth(bitmap, screenWidth);
+        Log.d(TAG, "bitmap getHeight3: " + bitmap.getHeight());
+        Log.d(TAG, "bitmap getWidth3: " + bitmap.getWidth());
+
+        // 设置壁纸
+        setWallpaper(wallpaperManager, lockScreen, bitmap);
+
+//        wallpaperManager.setWallpaperOffsetSteps(1f, 1f);
+//        wallpaperManager.setWallpaperOffsetSteps(0.5f, 0.5f);
+//        wallpaperManager.suggestDesiredDimensions(width, height);
+//        wallpaperManager.suggestDesiredDimensions(screenWidth, screenHeight);
+    }
+
+
+    /**
+     * 设置壁纸
+     *
+     * @param file   壁纸
+     * @param width  壁纸宽
+     * @param height 壁纸高
+     */
+    private static void setWallpaper(WallpaperManager wallpaperManager, boolean lockScreen, File file, int width, int height) throws IOException {
+        FileInputStream is = new FileInputStream(file);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && lockScreen) {
-            wallpaperManager.setStream(
+            int result = wallpaperManager.setStream(
                     is,
                     new Rect(0, 0, width, height),
                     true,
                     WallpaperManager.FLAG_LOCK | WallpaperManager.FLAG_SYSTEM
             );
+            Log.d(TAG, "setWallpaper: " + result);
         } else {
             wallpaperManager.setStream(is);
         }
         is.close();
     }
 
-
     /**
-     * 对刚好包含屏幕的图片进行中心裁剪。
+     * 设置壁纸
      *
-     * @param bitmap 宽或高刚好包含屏幕的图片
-     * @return 若高的部分多余，裁剪掉上下两边多余部分并返回。
-     * 若宽的部分多余，裁减掉左右两边多于部分并返回。
+     * @param bitmap 壁纸
      */
-    private static Bitmap cropCenter(Bitmap bitmap, int w2, int h2) {
-        int h1 = bitmap.getHeight();
-        int w1 = bitmap.getWidth();
-
-        if (w1 > w2) {
-            return Bitmap.createBitmap(bitmap, (w1 - w2) / 2, 0, w2, h2);
+    private static void setWallpaper(WallpaperManager wallpaperManager, boolean lockScreen, Bitmap bitmap) throws IOException {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && lockScreen) {
+            int result = wallpaperManager.setBitmap(bitmap, new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight()), true, WallpaperManager.FLAG_LOCK | WallpaperManager.FLAG_SYSTEM);
+            Log.d(TAG, "setWallpaper: " + result);
         } else {
-            return Bitmap.createBitmap(bitmap, 0, (h1 - h2) / 2, w2, h2);
+            wallpaperManager.setBitmap(bitmap);
         }
     }
+
 
     /**
      * 清空

@@ -34,7 +34,7 @@ public class EngineFactory {
     public IWallpaperEngine getEngineBySourceBean(@NonNull SourceBean bean) {
         switch (bean.getName()) {
             case BingWallpaperEngine.NAME:
-                return new BingWallpaperEngine(path);
+                return new BingWallpaperEngine(path, BingWallpaperEngine.RESOLUTION_UHD);
             default:
                 return new DirectEngine(bean.getName(), bean.getUrl(), path);
         }

@@ -128,6 +128,7 @@ public final class HttpClient {
 
             // 文件已存在
             if (file.exists() && file.length() == fileLength) {
+                Log.d(TAG, "download: cached fileLength = " + fileLength);
                 response.setBody(file);
             } else {
                 try (InputStream is = urlConnection.getInputStream();
