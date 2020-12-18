@@ -1,6 +1,8 @@
 package xyz.liut.bingwallpaper.utils;
 
 import android.content.Context;
+import android.util.DisplayMetrics;
+import android.view.WindowManager;
 
 /**
  * 屏幕工具
@@ -11,11 +13,17 @@ import android.content.Context;
 public class ScreenUtils {
 
     public static int getScreenWidth(Context context) {
-        return context.getResources().getDisplayMetrics().widthPixels;
+        WindowManager window = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        DisplayMetrics metrics = new DisplayMetrics();
+        window.getDefaultDisplay().getRealMetrics(metrics);
+        return metrics.widthPixels;
     }
 
     public static int getScreenHeight(Context context) {
-        return context.getResources().getDisplayMetrics().heightPixels;
+        WindowManager window = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        DisplayMetrics metrics = new DisplayMetrics();
+        window.getDefaultDisplay().getRealMetrics(metrics);
+        return metrics.heightPixels;
     }
 
 }

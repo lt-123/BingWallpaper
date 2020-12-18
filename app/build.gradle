@@ -1,5 +1,7 @@
-apply plugin: 'com.android.application'
-apply plugin: "xyz.liut.release"
+plugins {
+//    id "xyz.liut.release" version "1.0.38-alpha"
+    id "com.android.application"
+}
 
 android {
     compileSdkVersion 30
@@ -18,11 +20,13 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix ".debug"
+            resValue "string", "app_name", "@string/app_name_debug"
         }
 
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            resValue "string", "app_name", "@string/app_name_release"
         }
     }
 

@@ -12,6 +12,7 @@ import java.util.Set;
 
 import xyz.liut.bingwallpaper.bean.SourceBean;
 import xyz.liut.bingwallpaper.engine.BingWallpaperEngine;
+import xyz.liut.bingwallpaper.utils.ScreenUtils;
 import xyz.liut.bingwallpaper.utils.SpTool;
 
 /**
@@ -31,13 +32,6 @@ public class SourceManager {
         List<SourceBean> beans = new ArrayList<>();
         beans.add(new SourceBean(BingWallpaperEngine.NAME, BingWallpaperEngine.BING_URL, "[推荐]微软bing搜索每日壁纸", true));
 
-        beans.add(new SourceBean("Unsplash Source Random", "https://source.unsplash.com/random", "The most powerful photo engine in the world.", true));
-
-        beans.add(new SourceBean("Lorem Picsum 1080*1920", "https://picsum.photos/1080/1920", "The Lorem Ipsum for photos.", true));
-        beans.add(new SourceBean("Lorem Picsum 1080*2160", "https://picsum.photos/1080/2160", "The Lorem Ipsum for photos.", true));
-        beans.add(new SourceBean("Lorem Picsum 1080*2260", "https://picsum.photos/1080/2260", "The Lorem Ipsum for photos.", true));
-        beans.add(new SourceBean("Lorem Picsum 4096", "https://picsum.photos/4096", "The Lorem Ipsum for photos. 4096", true));
-
         beans.add(new SourceBean("小歪高清", "https://api.ixiaowai.cn/gqapi/gqapi.php", "小歪API - 随机图片API 随心所动 不再单调", true));
         beans.add(new SourceBean("小歪mc酱动漫", "https://api.ixiaowai.cn/mcapi/mcapi.php", "小歪API - 随机图片API 随心所动 不再单调", true));
         beans.add(new SourceBean("小歪二次元动漫", "https://api.ixiaowai.cn/api/api.php", "小歪API - 随机图片API 随心所动 不再单调", true));
@@ -52,9 +46,19 @@ public class SourceManager {
      */
     public static List<SourceBean> getSourceList(Context context) {
         List<SourceBean> beans = new ArrayList<>();
+        beans.addAll(getPhoneResolutionsSource(context));
         beans.addAll(internalSourceBeans);
         beans.addAll(getAddedSourceList(context));
         return Collections.unmodifiableList(beans);
+    }
+
+    private static List<SourceBean> getPhoneResolutionsSource(Context context) {
+        List<SourceBean> beans = new ArrayList<>();
+        int w = ScreenUtils.getScreenWidth(context);
+        int h = ScreenUtils.getScreenHeight(context);
+        beans.add(new SourceBean("Unsplash Source Random", "https://source.unsplash.com/random/" + w + "x" + h, "[推荐]The most powerful photo engine in the world.", true));
+        beans.add(new SourceBean("Lorem Picsum", "https://picsum.photos/" + w + "/" + h, "[推荐]The Lorem Ipsum for photos.", true));
+        return beans;
     }
 
 

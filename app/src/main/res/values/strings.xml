@@ -1,5 +1,6 @@
 <resources>
-    <string name="app_name">BingWallpaper</string>
+    <string name="app_name_release">BingWallpaper</string>
+    <string name="app_name_debug">bwd</string>
 
     <string name="show_src_bt">查看源码</string>
 

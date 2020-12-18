@@ -3,23 +3,18 @@ ext {
     println "versionCode = " + vc
 
     versionCode = vc
-    versionName = "2.0." + vc
+    versionName = "2.1." + vc
 }
 
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-
     repositories {
-        maven { url "https://plugins.gradle.org/m2/" }
-
         google()
         jcenter()
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:4.1.1'
-
-        classpath "gradle.plugin.xyz.liut.gradleplugin:buildSrc:0.0.5"
     }
 }
 
