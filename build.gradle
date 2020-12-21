@@ -12,9 +12,11 @@ buildscript {
     repositories {
         google()
         jcenter()
+        maven { url "https://dl.bintray.com/lt-123/maven" }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:4.1.1'
+        classpath 'xyz.liut:apk-release:1.0.40-beta'
     }
 }
 
