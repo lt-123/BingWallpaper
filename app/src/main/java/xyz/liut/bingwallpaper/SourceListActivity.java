@@ -1,6 +1,7 @@
 package xyz.liut.bingwallpaper;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
@@ -50,15 +51,21 @@ public class SourceListActivity extends Activity {
         listView.setOnItemLongClickListener((parent, view, position, id) -> {
             SourceBean bean = sourceList.get(position);
 
-            if (bean.isInternal()) {
-                ToastUtil.showToast(SourceListActivity.this, "内置源无法删除");
-                return false;
-            }
-
-            SourceManager.remove(SourceListActivity.this, bean.getName());
-            sourceList.remove(bean);
-
-            adapter.notifyDataSetInvalidated();
+            new AlertDialog.Builder(this)
+                    .setTitle("删除")
+                    .setMessage("是否删除" + bean.getName() + "?")
+                    .setPositiveButton("是", (dialog, which) -> {
+                        if (bean.isInternal()) {
+                            ToastUtil.showToast(SourceListActivity.this, "内置源无法删除");
+                        } else {
+                            SourceManager.remove(SourceListActivity.this, bean.getName());
+                            sourceList.remove(bean);
+                            adapter.notifyDataSetInvalidated();
+                            ToastUtil.showToast(SourceListActivity.this, "已删除： " + bean.getName());
+                        }
+                    })
+                    .setNegativeButton("否", null)
+                    .show();
             return true;
         });
     }
