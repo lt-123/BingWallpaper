@@ -22,13 +22,14 @@ import xyz.liut.bingwallpaper.http.Response;
  */
 public class BingWallpaperEngine implements IWallpaperEngine {
 
-    public static final String NAME = "BingWallpaper";
+    private static final String TAG = "BingWallpaper";
 
     public static final String RESOLUTION_UHD = "UHD";
     public static final String RESOLUTION_1080_1920 = "1080x1920";
 
-
-    private static final String TAG = NAME;
+    public static final String NAME = TAG;
+    public static final String NAME_UHD = TAG + "_" + RESOLUTION_UHD + "裁剪";
+    public static final String NAME_1080_1920 = TAG + "_" + RESOLUTION_1080_1920;
 
     /**
      * bing
@@ -40,21 +41,28 @@ public class BingWallpaperEngine implements IWallpaperEngine {
      */
     private static final String BING_WALLPAPER_API = "https://www.bing.com/HPImageArchive.aspx?format=js&n=1";
 
+    private final String name;
     private final String path;
     private final String resolutions;
 
     public BingWallpaperEngine(@NonNull String path, @Nullable String resolutions) {
+        Log.i(TAG, "BingWallpaperEngine() called with: path = [" + path + "], resolutions = [" + resolutions + "]");
         this.path = path;
-        if (TextUtils.isEmpty(resolutions)) {
+        if (RESOLUTION_UHD.equals(resolutions)) {
+            this.resolutions = RESOLUTION_UHD;
+            this.name = NAME_UHD;
+        } else if (RESOLUTION_1080_1920.equals(resolutions) || TextUtils.isEmpty(resolutions)) {
             this.resolutions = RESOLUTION_1080_1920;
+            this.name = NAME_1080_1920;
         } else {
             this.resolutions = resolutions;
+            this.name = TAG + "_" + resolutions;
         }
     }
 
     @Override
     public String engineName() {
-        return NAME;
+        return name;
     }
 
     @Override

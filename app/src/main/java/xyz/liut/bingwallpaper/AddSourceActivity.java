@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -18,6 +17,7 @@ import java.io.File;
 import xyz.liut.bingwallpaper.bean.SourceBean;
 import xyz.liut.bingwallpaper.engine.DirectEngine;
 import xyz.liut.bingwallpaper.engine.IWallpaperEngine;
+import xyz.liut.bingwallpaper.utils.AdjustBitmap;
 import xyz.liut.bingwallpaper.utils.ToastUtil;
 
 /**
@@ -88,33 +88,15 @@ public class AddSourceActivity extends Activity {
             engine.downLoadWallpaper(new IWallpaperEngine.Callback() {
                 @Override
                 public void onSucceed(File file) {
+                    int ivWidth = ivWallpaper.getWidth();
+                    int ivHeight = ivWallpaper.getHeight();
+                    final Bitmap bitmap = AdjustBitmap.decodeSampledBitmapFromFile(file, ivWidth, ivHeight);
 
-                    Bitmap bitmap;
-                    try {
-                        BitmapFactory.Options options = new BitmapFactory.Options();
-                        options.inJustDecodeBounds = true;
-                        BitmapFactory.decodeFile(file.toString(), options);
-                        options.inJustDecodeBounds = false;
-                        Log.d(TAG, "options.outHeight = " + options.outHeight);
-                        Log.d(TAG, "options.outWidth = " + options.outWidth);
-                        options.inSampleSize = calculateInSampleSize(options.outHeight, options.outWidth);
-                        Log.d(TAG, "options.inSampleSize = " + options.inSampleSize);
-                        options.inPreferredConfig = Bitmap.Config.RGB_565;
-                        bitmap = BitmapFactory.decodeFile(file.toString(), options);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-
-                        ToastUtil.showToast(AddSourceActivity.this, "检测失败： " + e.getMessage());
-                        return;
-                    }
-
-
-                    Bitmap finalBitmap = bitmap;
                     runOnUiThread(() -> {
-                        if (finalBitmap != null) {
-                            Log.d(TAG, "finalBitmap.Width " + finalBitmap.getWidth());
-                            Log.d(TAG, "finalBitmap.Height " + finalBitmap.getHeight());
-                            ivWallpaper.setImageBitmap(finalBitmap);
+                        if (bitmap != null) {
+                            Log.d(TAG, "finalBitmap.Width " + bitmap.getWidth());
+                            Log.d(TAG, "finalBitmap.Height " + bitmap.getHeight());
+                            ivWallpaper.setImageBitmap(bitmap);
                             detectedResult = true;
                             ToastUtil.showToast(AddSourceActivity.this, "检测成功");
                         } else {
