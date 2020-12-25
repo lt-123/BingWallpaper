@@ -20,6 +20,8 @@ import org.robolectric.shadows.ShadowLog;
 @Config(manifest = Config.NONE)
 public abstract class BaseTestCase {
 
+    protected final String TAG = getClass().getSimpleName();
+
     protected final Context context = ApplicationProvider.getApplicationContext();
 
     @Before

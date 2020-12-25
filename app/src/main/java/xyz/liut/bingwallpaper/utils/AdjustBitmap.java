@@ -3,8 +3,10 @@ package xyz.liut.bingwallpaper.utils;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import java.io.File;
 
@@ -15,6 +17,32 @@ import java.io.File;
  */
 public class AdjustBitmap {
 
+    private static final String TAG = "AdjustBitmap";
+
+    /**
+     * 从文件读取 bm， 并缩放， 缩放结果不会小于需求
+     *
+     * @param reqWidth  需求 宽
+     * @param reqHeight 需求 高
+     * @return bm
+     */
+    @Nullable
+    public static Bitmap decodeSampledBitmapFromFile(File file, int reqWidth, int reqHeight) {
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        try {
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(file.toString(), options);
+            options.inJustDecodeBounds = false;
+            Log.d(TAG, "options.outHeight = " + options.outHeight);
+            Log.d(TAG, "options.outWidth = " + options.outWidth);
+
+            return decodeSampledBitmapFromFile(file, reqWidth, reqHeight, options.outWidth, options.outHeight);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     /**
      * 从文件读取 bm， 并缩放， 缩放结果不会小于需求
      *
@@ -24,6 +52,7 @@ public class AdjustBitmap {
      * @param height    实际 高
      * @return bm
      */
+    @Nullable
     public static Bitmap decodeSampledBitmapFromFile(File file, int reqWidth, int reqHeight, int width, int height) {
         final BitmapFactory.Options options = new BitmapFactory.Options();
 
@@ -97,18 +126,6 @@ public class AdjustBitmap {
             bitmap.recycle();
         }
         return newBM;
-    }
-
-    /**
-     * 裁剪
-     */
-    public static Bitmap cropBitmap(Bitmap bitmap) {
-        int w = bitmap.getWidth(); // 得到图片的宽，高
-        int h = bitmap.getHeight();
-        int cropWidth = Math.min(w, h);// 裁切后所取的正方形区域边长
-
-        return Bitmap.createBitmap(bitmap, (bitmap.getWidth() - cropWidth) / 2,
-                (bitmap.getHeight() - cropWidth) / 2, cropWidth, cropWidth);
     }
 
 

@@ -22,13 +22,14 @@ import xyz.liut.bingwallpaper.http.Response;
  */
 public class BingWallpaperEngine implements IWallpaperEngine {
 
-    public static final String NAME = "BingWallpaper";
+    private static final String TAG = "BingWallpaper";
 
     public static final String RESOLUTION_UHD = "UHD";
     public static final String RESOLUTION_1080_1920 = "1080x1920";
 
-
-    private static final String TAG = NAME;
+    public static final String NAME = TAG;
+    public static final String NAME_UHD = TAG + "_" + RESOLUTION_UHD + "裁剪";
+    public static final String NAME_1080_1920 = TAG + "_" + RESOLUTION_1080_1920;
 
     /**
      * bing
@@ -40,21 +41,28 @@ public class BingWallpaperEngine implements IWallpaperEngine {
      */
     private static final String BING_WALLPAPER_API = "https://www.bing.com/HPImageArchive.aspx?format=js&n=1";
 
+    private final String name;
     private final String path;
     private final String resolutions;
 
     public BingWallpaperEngine(@NonNull String path, @Nullable String resolutions) {
+        Log.i(TAG, "BingWallpaperEngine() called with: path = [" + path + "], resolutions = [" + resolutions + "]");
         this.path = path;
-        if (TextUtils.isEmpty(resolutions)) {
+        if (RESOLUTION_UHD.equals(resolutions)) {
+            this.resolutions = RESOLUTION_UHD;
+            this.name = NAME_UHD;
+        } else if (RESOLUTION_1080_1920.equals(resolutions) || TextUtils.isEmpty(resolutions)) {
             this.resolutions = RESOLUTION_1080_1920;
+            this.name = NAME_1080_1920;
         } else {
             this.resolutions = resolutions;
+            this.name = TAG + "_" + resolutions;
         }
     }
 
     @Override
     public String engineName() {
-        return NAME;
+        return name;
     }
 
     @Override
@@ -76,26 +84,19 @@ public class BingWallpaperEngine implements IWallpaperEngine {
             String resp = response.getBody();
             Log.d(TAG, "resp = " + resp);
 
-            String urlbase = new JSONObject(resp)
+            JSONObject jo = new JSONObject(resp)
                     .getJSONArray("images")
-                    .getJSONObject(0)
-                    .getString("urlbase");
+                    .getJSONObject(0);
 
+            String copyright = jo.getString("copyright");
+            callback.onMessage(copyright);
+
+            String urlbase = jo.getString("urlbase");
             String jpgUrl = BING_URL + urlbase + "_" + resolutions + ".jpg";
 
-            callback.onMessage("获取URL成功，开始下载");
-
             String fileName = path + File.separator + urlbase.split("=")[1] + "_" + resolutions + ".jpg";
-            Response<File> fileResponse = HttpClient.getInstance().download(jpgUrl, fileName, true);
 
-            if (fileResponse.getError() != null) {
-                callback.onFailed(fileResponse.getError());
-                return;
-            }
-
-            Log.d("liut", "getHeaders: " + fileResponse.getHeaders());
-            callback.onSucceed(fileResponse.getBody());
-
+            HttpClient.getInstance().download(jpgUrl, fileName, new DownloadCallbackAdapter(callback));
         } catch (Exception e) {
             callback.onFailed(e);
         }

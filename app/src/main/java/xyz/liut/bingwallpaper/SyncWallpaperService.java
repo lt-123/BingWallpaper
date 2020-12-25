@@ -106,9 +106,24 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
     }
 
 
+    /**
+     * 普通消息
+     *
+     * @param msg 消息
+     */
     @Override
     public void onMessage(String msg) {
         showMsg(msg);
+    }
+
+    /**
+     * 进度信息更新到通知栏
+     *
+     * @param msg 进度消息
+     */
+    @Override
+    public void onProgressMessage(String msg) {
+        setNotification(msg);
     }
 
     @Override

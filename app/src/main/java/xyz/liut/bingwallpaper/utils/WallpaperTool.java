@@ -78,6 +78,10 @@ public class WallpaperTool {
 
         // 从文件读取图片 按1/整数倍数 缩放
         Bitmap bitmap = AdjustBitmap.decodeSampledBitmapFromFile(jpgFile, screenWidth, screenHeight, width, height);
+        if (bitmap == null) {
+            throw new NullPointerException("无法解析图片");
+        }
+
         Log.d(TAG, "bitmap getHeight: " + bitmap.getHeight());
         Log.d(TAG, "bitmap getWidth: " + bitmap.getWidth());
 
