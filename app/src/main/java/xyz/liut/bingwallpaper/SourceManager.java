@@ -1,6 +1,7 @@
 package xyz.liut.bingwallpaper;
 
 import android.content.Context;
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -24,7 +25,11 @@ public class SourceManager {
 
     private static final String TAG = "SourceManager";
 
-    public static final String separator = "separator";
+    private static final String separator = "separator";
+
+    private static final String HUAWEI = "huawei";
+
+    private static final String HONOR = "honor";
 
     private static final List<SourceBean> bingSourceBeans;
     private static final List<SourceBean> directSourceBeans;
@@ -112,7 +117,18 @@ public class SourceManager {
         String string = tool.get(Constants.Default.KEY_DEFAULT_SOURCE);
         Log.i(TAG, "getDefaultSource: " + string);
         if (TextUtils.isEmpty(string)) {
-            return directSourceBeans.get(0);
+            String brand = Build.BRAND;
+            if (brand != null) {
+                switch (brand) {
+                    case HONOR:
+                    case HUAWEI:
+                        return bingSourceBeans.get(0);
+                    default:
+                        return bingSourceBeans.get(1);
+                }
+            } else {
+                return bingSourceBeans.get(1);
+            }
         } else {
             String[] items = string.split(separator);
             boolean internal = Boolean.parseBoolean(items[3]);
