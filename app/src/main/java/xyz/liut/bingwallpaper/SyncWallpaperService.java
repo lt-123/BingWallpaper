@@ -244,7 +244,7 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
         builder
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent)
-                .setSmallIcon(R.drawable.ic_bing)
+                .setSmallIcon(R.mipmap.ic_bing)
                 .setContentTitle(engine.engineName())
                 .setContentText(msg);
 
