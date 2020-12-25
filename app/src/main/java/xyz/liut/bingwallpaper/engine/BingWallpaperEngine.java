@@ -95,16 +95,8 @@ public class BingWallpaperEngine implements IWallpaperEngine {
             String jpgUrl = BING_URL + urlbase + "_" + resolutions + ".jpg";
 
             String fileName = path + File.separator + urlbase.split("=")[1] + "_" + resolutions + ".jpg";
-            Response<File> fileResponse = HttpClient.getInstance().download(jpgUrl, fileName);
 
-            if (fileResponse.getError() != null) {
-                callback.onFailed(fileResponse.getError());
-                return;
-            }
-
-            Log.d("liut", "getHeaders: " + fileResponse.getHeaders());
-            callback.onSucceed(fileResponse.getBody());
-
+            HttpClient.getInstance().download(jpgUrl, fileName, new DownloadCallbackAdapter(callback));
         } catch (Exception e) {
             callback.onFailed(e);
         }

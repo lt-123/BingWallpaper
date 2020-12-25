@@ -85,7 +85,7 @@ public class AddSourceActivity extends Activity {
         progressDialog.show();
         new Thread(() -> {
             DirectEngine engine = new DirectEngine("addSource", url, getExternalCacheDir().toString());
-            engine.downLoadWallpaper(new IWallpaperEngine.Callback() {
+            engine.downLoadWallpaper(new IWallpaperEngine.SimpleCallback() {
                 @Override
                 public void onSucceed(File file) {
                     int ivWidth = ivWallpaper.getWidth();

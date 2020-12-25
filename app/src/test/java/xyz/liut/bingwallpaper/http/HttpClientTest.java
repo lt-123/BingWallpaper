@@ -1,10 +1,14 @@
 package xyz.liut.bingwallpaper.http;
 
+import android.util.Log;
+
 import org.junit.Test;
 
 import java.io.File;
 
 import xyz.liut.bingwallpaper.BaseTestCase;
+import xyz.liut.bingwallpaper.engine.DownloadCallbackAdapter;
+import xyz.liut.bingwallpaper.engine.IWallpaperEngine;
 
 /**
  * Create by liut
@@ -24,11 +28,27 @@ public class HttpClientTest extends BaseTestCase {
 
     @Test
     public void download() {
-        Response<File> resp = HttpClient.getInstance().download(URL, "build/test.jpg");
-        System.out.println(resp);
+        IWallpaperEngine.Callback callback = new IWallpaperEngine.SimpleCallback() {
+            @Override
+            public void onSucceed(File file) {
+                Log.d(TAG, "onSucceed() called with: file = [" + file + "]");
+            }
+
+            @Override
+            public void onMessage(String msg) {
+                Log.d(TAG, "onMessage() called with: msg = [" + msg + "]");
+            }
+
+            @Override
+            public void onFailed(Exception e) {
+                e.printStackTrace();
+            }
+        };
+
+        // 直链
+        HttpClient.getInstance().download(URL, "build/test.jpg", new DownloadCallbackAdapter(callback));
 
         // 重定向
-        Response<File> resp2 = HttpClient.getInstance().download(URL_2, "build/test2.jpg");
-        System.out.println(resp2);
+        HttpClient.getInstance().download(URL_2, "build/test2.jpg", new DownloadCallbackAdapter(callback));
     }
 }

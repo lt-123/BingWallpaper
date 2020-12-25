@@ -2,6 +2,8 @@ package xyz.liut.bingwallpaper.http;
 
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -89,44 +91,39 @@ public final class HttpClient {
      * @param url      url
      * @param fileName 文件名
      */
-    public Response<File> download(String url, String fileName) {
+    public void download(@NonNull String url, @NonNull String fileName, @NonNull FileDownloadCallback callback) {
         Log.d(TAG, "download() called with: url = [" + url + "], fileName = [" + fileName + "]");
-
-        Response<File> response = new Response<>();
 
         File file = new File(fileName);
         File dir = file.getParentFile();
 
         if (dir == null) {
-            response.setError(new HttpException("创建文件夹失败"));
-            return response;
+            callback.onError(new HttpException("创建文件夹失败"));
+            return;
         } else if (dir.isFile()) {
             boolean ret = dir.delete();
             if (!ret) {
-                response.setError(new HttpException("创建文件夹失败"));
-                return response;
+                callback.onError(new HttpException("创建文件夹失败"));
+                return;
             }
         } else if (!dir.exists()) {
             boolean ret = dir.mkdirs();
             if (!ret) {
-                response.setError(new HttpException("创建文件夹失败"));
-                return response;
+                callback.onError(new HttpException("创建文件夹失败"));
+                return;
             }
         }
 
-        doIO(url, file, response);
-
-        return response;
+        doIO(url, file, callback);
     }
 
     /**
      * 网络->磁盘
      *
-     * @param url      url
-     * @param file     保存到文件
-     * @param response 响应
+     * @param url  url
+     * @param file 保存到文件
      */
-    private void doIO(String url, File file, Response<File> response) {
+    private void doIO(@NonNull String url, @NonNull File file, @NonNull FileDownloadCallback callback) {
         HttpURLConnection urlConnection;
         try {
             URL u = new URL(url);
@@ -138,8 +135,15 @@ public final class HttpClient {
             urlConnection.setInstanceFollowRedirects(false);
 
             int respCode = urlConnection.getResponseCode();
-            response.setResponseCode(respCode);
-            response.setHeaders(urlConnection.getHeaderFields());
+
+            long fileLength;
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                fileLength = urlConnection.getContentLengthLong();
+            } else {
+                fileLength = urlConnection.getContentLength();
+            }
+
+            callback.onHeader(respCode, fileLength, urlConnection.getHeaderFields());
 
             // 重定向
             if (respCode > 300 && respCode < 400) {
@@ -147,36 +151,39 @@ public final class HttpClient {
                 if (location == null) throw new NullPointerException("重定向失败");
                 URL locationUrl = new URL(u, location);
                 Log.d(TAG, "重定向: " + respCode + "  " + locationUrl);
-                doIO(locationUrl.toString(), file, response);
+                doIO(locationUrl.toString(), file, callback);
             }
             // 正常
             else if (respCode >= 200 && respCode < 300) {
-
-                long fileLength;
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-                    fileLength = urlConnection.getContentLengthLong();
-                } else {
-                    fileLength = urlConnection.getContentLength();
-                }
-
                 // 文件已存在
-                if (file.exists() && -1 != fileLength && file.length() == fileLength) {
+                if (file.exists() && file.length() == fileLength) {
                     Log.d(TAG, "download: cached fileLength = " + fileLength);
-                    response.setBody(file);
+                    callback.onCompleted(file);
                 } else {
                     try (InputStream is = urlConnection.getInputStream();
                          OutputStream os = new FileOutputStream(file)) {
                         byte[] buffer = new byte[1024];
                         int len;
-                        while ((len = is.read(buffer)) != -1)
+                        long totalBytesRead = 0L;
+                        long progressTime = 0;
+                        while ((len = is.read(buffer)) != -1) {
+                            // 进度回调间隔：1 秒
+                            if (System.currentTimeMillis() - progressTime > 1000) {
+                                progressTime = System.currentTimeMillis();
+                                callback.onProgress(totalBytesRead, fileLength);
+                            }
+
                             os.write(buffer, 0, len);
+                            totalBytesRead += len;
+                        }
+                        callback.onProgress(totalBytesRead, fileLength);
 
                         if (fileLength != -1 && file.length() != fileLength) {
                             //noinspection ResultOfMethodCallIgnored
                             file.delete();
-                            response.setError(new HttpException("文件下载不完整"));
+                            callback.onError(new HttpException("文件下载不完整"));
                         } else {
-                            response.setBody(file);
+                            callback.onCompleted(file);
                             Log.d(TAG, "download: fileLength = " + fileLength);
                         }
                     }
@@ -185,10 +192,10 @@ public final class HttpClient {
             }
             // 异常
             else {
-                response.setError(new HttpException("网络请求出错 " + respCode));
+                callback.onError(new HttpException("网络请求出错 " + respCode));
             }
         } catch (Exception e) {
-            response.setError(new HttpException(e.getMessage(), e));
+            callback.onError(new HttpException(e.getMessage(), e));
         }
 
     }

@@ -37,12 +37,32 @@ public interface IWallpaperEngine {
      */
     interface Callback {
 
+        /**
+         * 完成
+         */
         void onSucceed(File file);
 
+        /**
+         * 普通消息
+         */
         void onMessage(String msg);
 
+        /**
+         * 进度消息
+         */
+        void onProgressMessage(String msg);
+
+        /**
+         * 出现异常
+         */
         void onFailed(Exception e);
 
+    }
+
+    abstract class SimpleCallback implements Callback {
+        @Override
+        public void onProgressMessage(String msg) {
+        }
     }
 
 }
