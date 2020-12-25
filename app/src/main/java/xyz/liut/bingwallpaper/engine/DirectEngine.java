@@ -51,7 +51,7 @@ public class DirectEngine extends AbstractWallpaperEngine {
     @Override
     public void downLoadWallpaper(@NonNull Callback callback) {
         String fileName = path + File.separator + createFileName();
-        Response<File> resp = HttpClient.getInstance().download(url, fileName, false);
+        Response<File> resp = HttpClient.getInstance().download(url, fileName);
 
         if (resp.getError() != null) {
             callback.onFailed(resp.getError());

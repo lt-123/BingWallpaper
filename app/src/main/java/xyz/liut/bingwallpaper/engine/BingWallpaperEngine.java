@@ -84,17 +84,18 @@ public class BingWallpaperEngine implements IWallpaperEngine {
             String resp = response.getBody();
             Log.d(TAG, "resp = " + resp);
 
-            String urlbase = new JSONObject(resp)
+            JSONObject jo = new JSONObject(resp)
                     .getJSONArray("images")
-                    .getJSONObject(0)
-                    .getString("urlbase");
+                    .getJSONObject(0);
 
+            String copyright = jo.getString("copyright");
+            callback.onMessage(copyright);
+
+            String urlbase = jo.getString("urlbase");
             String jpgUrl = BING_URL + urlbase + "_" + resolutions + ".jpg";
 
-            callback.onMessage("获取URL成功，开始下载");
-
             String fileName = path + File.separator + urlbase.split("=")[1] + "_" + resolutions + ".jpg";
-            Response<File> fileResponse = HttpClient.getInstance().download(jpgUrl, fileName, true);
+            Response<File> fileResponse = HttpClient.getInstance().download(jpgUrl, fileName);
 
             if (fileResponse.getError() != null) {
                 callback.onFailed(fileResponse.getError());

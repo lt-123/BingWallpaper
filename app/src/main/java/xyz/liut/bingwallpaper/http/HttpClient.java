@@ -86,11 +86,10 @@ public final class HttpClient {
     /**
      * 下载文件
      *
-     * @param url             url
-     * @param fileName        文件名
-     * @param checkFileLength 是否校验文件尺寸 重定向连接请关闭
+     * @param url      url
+     * @param fileName 文件名
      */
-    public Response<File> download(String url, String fileName, boolean checkFileLength) {
+    public Response<File> download(String url, String fileName) {
         Log.d(TAG, "download() called with: url = [" + url + "], fileName = [" + fileName + "]");
 
         Response<File> response = new Response<>();
@@ -115,44 +114,83 @@ public final class HttpClient {
             }
         }
 
+        doIO(url, file, response);
+
+        return response;
+    }
+
+    /**
+     * 网络->磁盘
+     *
+     * @param url      url
+     * @param file     保存到文件
+     * @param response 响应
+     */
+    private void doIO(String url, File file, Response<File> response) {
         HttpURLConnection urlConnection;
         try {
-            urlConnection = (HttpURLConnection) new URL(url).openConnection();
+            URL u = new URL(url);
+            urlConnection = (HttpURLConnection) u.openConnection();
             urlConnection.setConnectTimeout(CONNECT_TIMEOUT);
             urlConnection.setReadTimeout(READ_TIMEOUT);
             urlConnection.setRequestProperty("User-Agent", UA);
-            response.setResponseCode(urlConnection.getResponseCode());
+            // 手动处理重定向，为了解决 文件 length 问题
+            urlConnection.setInstanceFollowRedirects(false);
+
+            int respCode = urlConnection.getResponseCode();
+            response.setResponseCode(respCode);
             response.setHeaders(urlConnection.getHeaderFields());
 
-            int fileLength = urlConnection.getContentLength();
+            // 重定向
+            if (respCode > 300 && respCode < 400) {
+                String location = urlConnection.getHeaderField("Location");
+                if (location == null) throw new NullPointerException("重定向失败");
+                URL locationUrl = new URL(u, location);
+                Log.d(TAG, "重定向: " + respCode + "  " + locationUrl);
+                doIO(locationUrl.toString(), file, response);
+            }
+            // 正常
+            else if (respCode >= 200 && respCode < 300) {
 
-            // 文件已存在
-            if (file.exists() && file.length() == fileLength) {
-                Log.d(TAG, "download: cached fileLength = " + fileLength);
-                response.setBody(file);
-            } else {
-                try (InputStream is = urlConnection.getInputStream();
-                     OutputStream os = new FileOutputStream(file)) {
-                    byte[] buffer = new byte[1024];
-                    int len;
-                    while ((len = is.read(buffer)) != -1)
-                        os.write(buffer, 0, len);
+                long fileLength;
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                    fileLength = urlConnection.getContentLengthLong();
+                } else {
+                    fileLength = urlConnection.getContentLength();
+                }
 
-                    if (checkFileLength && file.length() != fileLength) {
-                        //noinspection ResultOfMethodCallIgnored
-                        file.delete();
-                        response.setError(new HttpException("文件下载不完整"));
-                    } else {
-                        response.setBody(file);
-                        Log.d(TAG, "download: fileLength = " + fileLength);
+                // 文件已存在
+                if (file.exists() && -1 != fileLength && file.length() == fileLength) {
+                    Log.d(TAG, "download: cached fileLength = " + fileLength);
+                    response.setBody(file);
+                } else {
+                    try (InputStream is = urlConnection.getInputStream();
+                         OutputStream os = new FileOutputStream(file)) {
+                        byte[] buffer = new byte[1024];
+                        int len;
+                        while ((len = is.read(buffer)) != -1)
+                            os.write(buffer, 0, len);
+
+                        if (fileLength != -1 && file.length() != fileLength) {
+                            //noinspection ResultOfMethodCallIgnored
+                            file.delete();
+                            response.setError(new HttpException("文件下载不完整"));
+                        } else {
+                            response.setBody(file);
+                            Log.d(TAG, "download: fileLength = " + fileLength);
+                        }
                     }
                 }
+
+            }
+            // 异常
+            else {
+                response.setError(new HttpException("网络请求出错 " + respCode));
             }
         } catch (Exception e) {
             response.setError(new HttpException(e.getMessage(), e));
         }
 
-        return response;
     }
 
 

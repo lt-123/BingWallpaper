@@ -22,6 +22,7 @@ public class SourceManagerTest extends BaseTestCase {
     @Test
     public void getSourceList() {
         SourceManager.getSourceList(context).forEach(sourceBean -> {
+            Log.d(TAG, "--------------sourceBean: " + sourceBean.getName() + "---------------");
             if (sourceBean.getName().equals(BingWallpaperEngine.NAME)) return;
             IWallpaperEngine engine = new EngineFactory("build/wallpaper")
                     .getEngineBySourceBean(sourceBean);
