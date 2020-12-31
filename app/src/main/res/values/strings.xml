@@ -42,4 +42,12 @@
     <string name="complete_ignore_battery">已完成忽略电池优化</string>
     <string name="no_timed">无定时任务</string>
 
+    <string name="show_toast">显示Toast</string>
+    <string name="show_toast_desc">设置壁纸进度会有Toast提示</string>
+    <string name="show_toast_desc2">设置壁纸进度不会有Toast提示</string>
+
+    <string name="only_wifi">仅wifi下载</string>
+    <string name="only_wifi_desc">仅wifi网络下载</string>
+    <string name="only_wifi_desc2">所有网络均可下载</string>
+
 </resources>

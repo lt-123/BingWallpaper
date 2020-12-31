@@ -35,9 +35,9 @@ public class SettingActivity extends Activity implements View.OnClickListener {
     private static final String TAG = "MainActivity";
 
 
-    private TextView tvSource, tvTime, tvSave, tvSetLockScreen, tvShowManual, tvHideMain;
+    private TextView tvSource, tvTime, tvSave, tvSetLockScreen, tvShowToast, tvOnlyWifi, tvShowManual, tvHideMain;
 
-    private Switch swSave, swLockScreen, swShowManual, swHideMain;
+    private Switch swSave, swLockScreen, swShowToast, swOnlyWifi, swShowManual, swHideMain;
 
     private SpTool spTool;
 
@@ -52,11 +52,15 @@ public class SettingActivity extends Activity implements View.OnClickListener {
         tvTime = findViewById(R.id.tv_time);
         tvSave = findViewById(R.id.tv_save_path);
         tvSetLockScreen = findViewById(R.id.tv_set_lock_screen);
+        tvShowToast = findViewById(R.id.tv_show_toast);
+        tvOnlyWifi = findViewById(R.id.tv_only_wifi);
         tvShowManual = findViewById(R.id.tv_show_manual);
         tvHideMain = findViewById(R.id.tv_hide_main);
 
         swSave = findViewById(R.id.sw_save);
         swLockScreen = findViewById(R.id.sw_lock_screen);
+        swShowToast = findViewById(R.id.sw_show_toast);
+        swOnlyWifi = findViewById(R.id.sw_only_wifi);
         swShowManual = findViewById(R.id.sw_show_manual);
         swHideMain = findViewById(R.id.sw_show_main);
 
@@ -66,6 +70,8 @@ public class SettingActivity extends Activity implements View.OnClickListener {
         swSave.setOnClickListener(this);
         swLockScreen.setOnClickListener(this);
         swShowManual.setOnClickListener(this);
+        swShowToast.setOnClickListener(this);
+        swOnlyWifi.setOnClickListener(this);
         swHideMain.setOnClickListener(this);
 
         findViewById(R.id.bt_setup_now).setOnClickListener(this);
@@ -99,6 +105,14 @@ public class SettingActivity extends Activity implements View.OnClickListener {
             // 同时设置锁屏
             case R.id.sw_lock_screen:
                 savePreference(Constants.Default.KEY_LOCK_SCREEN, swLockScreen.isChecked());
+                refreshSubText();
+                break;
+            case R.id.sw_show_toast:
+                savePreference(Constants.Default.KEY_SHOW_TOAST, swShowToast.isChecked());
+                refreshSubText();
+                break;
+            case R.id.sw_only_wifi:
+                savePreference(Constants.Default.KEY_ONLY_WIFI, swOnlyWifi.isChecked());
                 refreshSubText();
                 break;
             // 启用手动
@@ -139,10 +153,14 @@ public class SettingActivity extends Activity implements View.OnClickListener {
         // 开关选项
         boolean save = getPreference(Constants.Default.KEY_SAVE, false);
         boolean lockScreen = getPreference(Constants.Default.KEY_LOCK_SCREEN, true);
+        boolean showToast = getPreference(Constants.Default.KEY_SHOW_TOAST, true);
+        boolean onlyWifi = getPreference(Constants.Default.KEY_ONLY_WIFI, false);
         boolean showManual = getPreference(Constants.Default.KEY_SHOW_MANUAL_SYNC, false);
         boolean hideMain = getPreference(Constants.Default.KEY_HIDE_MAIN, false);
         swSave.setChecked(save);
         swLockScreen.setChecked(lockScreen);
+        swShowToast.setChecked(showToast);
+        swOnlyWifi.setChecked(onlyWifi);
         swShowManual.setChecked(showManual);
         swHideMain.setChecked(hideMain);
 
@@ -182,6 +200,18 @@ public class SettingActivity extends Activity implements View.OnClickListener {
             tvSetLockScreen.setText("同时设置锁屏壁纸已开启(仅支持7.0及以上版本)");
         } else {
             tvSetLockScreen.setText("仅设置桌面壁纸");
+        }
+
+        if (swShowToast.isChecked()) {
+            tvShowToast.setText(R.string.show_toast_desc);
+        } else {
+            tvShowToast.setText(R.string.show_toast_desc2);
+        }
+
+        if (swOnlyWifi.isChecked()) {
+            tvOnlyWifi.setText(R.string.only_wifi_desc);
+        } else {
+            tvOnlyWifi.setText(R.string.only_wifi_desc2);
         }
 
         if (swShowManual.isChecked()) {
