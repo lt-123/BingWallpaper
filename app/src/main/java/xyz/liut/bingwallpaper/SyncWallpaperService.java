@@ -36,7 +36,9 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
 
     private volatile IWallpaperEngine engine;
 
-    private SpTool spTool;
+    private volatile SpTool spTool;
+
+    private volatile Thread wallpaperThread;
 
     /**
      * 启动
@@ -63,7 +65,10 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        new Thread(this::syncWallpaper).start();
+        if (wallpaperThread == null) {
+            wallpaperThread = new Thread(this::syncWallpaper);
+            wallpaperThread.start();
+        }
         return START_NOT_STICKY;
     }
 
@@ -81,6 +86,7 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
             e.printStackTrace();
         }
         stopSelf();
+        wallpaperThread = null;
     }
 
     @Override
