@@ -115,9 +115,9 @@ public class SourceManager {
     public static SourceBean getDefaultSource(Context context) {
         SpTool tool = SpTool.getDefault(context);
         String string = tool.get(Constants.Default.KEY_DEFAULT_SOURCE);
-        Log.i(TAG, "getDefaultSource: " + string);
+        Log.i(TAG, "getDefaultSource: " + string + " Build.BRAND: " + Build.BRAND);
         if (TextUtils.isEmpty(string)) {
-            String brand = Build.BRAND;
+            String brand = Build.BRAND.toLowerCase();
             if (brand != null) {
                 switch (brand) {
                     case HONOR:

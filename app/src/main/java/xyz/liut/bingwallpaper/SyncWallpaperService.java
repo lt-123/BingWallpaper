@@ -68,6 +68,8 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
         if (wallpaperThread == null) {
             wallpaperThread = new Thread(this::syncWallpaper);
             wallpaperThread.start();
+        } else {
+            Log.w(TAG, "wallpaperThread 正在执行中");
         }
         return START_NOT_STICKY;
     }
