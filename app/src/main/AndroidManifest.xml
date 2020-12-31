@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="xyz.liut.bingwallpaper">
 
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
 
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
@@ -95,7 +96,7 @@
             android:name=".SyncTileService"
             android:description="@string/app_name"
             android:exported="true"
-            android:icon="@drawable/ic_bing"
+            android:icon="@mipmap/ic_bing"
             android:label="@string/sync_wallpaper"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>

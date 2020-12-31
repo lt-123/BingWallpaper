@@ -38,6 +38,16 @@ public interface Constants {
         String KEY_LOCK_SCREEN = "KEY_LOCK_SCREEN";
 
         /**
+         * 显示土司 KEY
+         */
+        String KEY_SHOW_TOAST = "KEY_SHOW_TOAST";
+
+        /**
+         * 仅wifi KEY
+         */
+        String KEY_ONLY_WIFI = "KEY_ONLY_WIFI";
+
+        /**
          * 显示手动 KEY
          */
         String KEY_SHOW_MANUAL_SYNC = "KEY_SHOW_MANUAL_SYNC";

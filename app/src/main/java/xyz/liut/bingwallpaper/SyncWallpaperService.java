@@ -18,6 +18,7 @@ import java.util.List;
 import xyz.liut.bingwallpaper.bean.SourceBean;
 import xyz.liut.bingwallpaper.engine.EngineFactory;
 import xyz.liut.bingwallpaper.engine.IWallpaperEngine;
+import xyz.liut.bingwallpaper.utils.NetworkUtil;
 import xyz.liut.bingwallpaper.utils.SpTool;
 import xyz.liut.bingwallpaper.utils.ToastUtil;
 import xyz.liut.bingwallpaper.utils.WallpaperTool;
@@ -36,7 +37,9 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
 
     private volatile IWallpaperEngine engine;
 
-    private SpTool spTool;
+    private volatile SpTool spTool;
+
+    private volatile Thread wallpaperThread;
 
     /**
      * 启动
@@ -63,7 +66,22 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        new Thread(this::syncWallpaper).start();
+        if (wallpaperThread == null) {
+            boolean onlyWifi = spTool.get(Constants.Default.KEY_ONLY_WIFI, false);
+            boolean wifiState = NetworkUtil.isWifi(this);
+
+            if (!onlyWifi || wifiState) {
+                wallpaperThread = new Thread(this::syncWallpaper);
+                wallpaperThread.start();
+            } else {
+                setNotification("only wifi");
+                stopSelf();
+                Log.w(TAG, "only wifi： " + onlyWifi + " wifi state： " + wifiState);
+            }
+        } else {
+            setNotification("wallpaperThread 正在执行中");
+            Log.w(TAG, "wallpaperThread 正在执行中");
+        }
         return START_NOT_STICKY;
     }
 
@@ -81,6 +99,7 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
             e.printStackTrace();
         }
         stopSelf();
+        wallpaperThread = null;
     }
 
     @Override
@@ -244,7 +263,7 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
         builder
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent)
-                .setSmallIcon(R.drawable.ic_bing)
+                .setSmallIcon(R.mipmap.ic_bing)
                 .setContentTitle(engine.engineName())
                 .setContentText(msg);
 
