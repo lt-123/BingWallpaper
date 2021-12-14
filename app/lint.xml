@@ -6,6 +6,7 @@
 
     <issue id="SwitchStatementWithTooFewBranches" severity="ignore" />
 
+    <issue id="GoogleAppIndexingWarning" severity="ignore" />
 
     <issue id="ButtonStyle" severity="ignore" />
 

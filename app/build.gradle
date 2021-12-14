@@ -1,5 +1,5 @@
 plugins {
-    id "xyz.liut.release"
+    // id "xyz.liut.release"
     id "com.android.application"
 }
 
@@ -30,10 +30,6 @@ android {
         }
     }
 
-    lintOptions {
-        disable 'GoogleAppIndexingWarning'
-    }
-
     compileOptions {
         sourceCompatibility = '1.8'
         targetCompatibility = '1.8'
@@ -45,14 +41,14 @@ android {
 
 }
 
-outputApk {
-    fileNameTemplate = 'bingwallpaper-$b-$vn'
-    jiaguFileNameTemplate = 'bingwallpaper-$b-$vn'
-    jiaguCmdParams = "-autosign -automulpkg"
-    outputPath = './output/'
-    jiaguOutputPath = './output/'
-    openDir = true
-}
+//outputApk {
+//    fileNameTemplate = 'bingwallpaper-$b-$vn'
+//    jiaguFileNameTemplate = 'bingwallpaper-$b-$vn'
+//    jiaguCmdParams = "-autosign -automulpkg"
+//    outputPath = './output/'
+//    jiaguOutputPath = './output/'
+//    openDir = true
+//}
 
 dependencies {
     //---- test -----
