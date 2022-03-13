@@ -7,7 +7,7 @@ import org.junit.Test;
 import java.io.File;
 
 import xyz.liut.bingwallpaper.BaseTestCase;
-import xyz.liut.bingwallpaper.engine.DownloadCallbackAdapter;
+import xyz.liut.bingwallpaper.engine.CommonDownloadCallback;
 import xyz.liut.bingwallpaper.engine.IWallpaperEngine;
 
 /**
@@ -28,7 +28,7 @@ public class HttpClientTest extends BaseTestCase {
 
     @Test
     public void download() {
-        IWallpaperEngine.Callback callback = new IWallpaperEngine.SimpleCallback() {
+        IWallpaperEngine.DownloadCallback downloadCallback = new IWallpaperEngine.SimpleDownloadCallback() {
             @Override
             public void onSucceed(File file) {
                 Log.d(TAG, "onSucceed() called with: file = [" + file + "]");
@@ -46,9 +46,9 @@ public class HttpClientTest extends BaseTestCase {
         };
 
         // 直链
-        HttpClient.getInstance().download(URL, "build/test.jpg", new DownloadCallbackAdapter(callback));
+        HttpClient.getInstance().download(URL, "build/test.jpg", new CommonDownloadCallback(downloadCallback));
 
         // 重定向
-        HttpClient.getInstance().download(URL_2, "build/test2.jpg", new DownloadCallbackAdapter(callback));
+        HttpClient.getInstance().download(URL_2, "build/test2.jpg", new CommonDownloadCallback(downloadCallback));
     }
 }

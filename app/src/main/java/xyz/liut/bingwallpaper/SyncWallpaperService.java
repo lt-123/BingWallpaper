@@ -26,7 +26,7 @@ import xyz.liut.bingwallpaper.utils.WallpaperTool;
 /**
  * 同步壁纸
  */
-public class SyncWallpaperService extends Service implements IWallpaperEngine.Callback {
+public class SyncWallpaperService extends Service implements IWallpaperEngine.DownloadCallback {
 
     private static final String TAG = "SyncWallpaperService";
 

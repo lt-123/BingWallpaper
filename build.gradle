@@ -1,5 +1,6 @@
 ext {
-    def vc = getVersionCode()
+    def vc = 63
+//    def vc = getVersionCode()
     def vn = getLastTag()
     println "versionCode = " + vc
     println "versionName = " + vn

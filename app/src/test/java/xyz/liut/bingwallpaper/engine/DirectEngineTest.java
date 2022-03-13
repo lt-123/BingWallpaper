@@ -21,7 +21,7 @@ public class DirectEngineTest extends BaseTestCase {
     @Test
     public void downLoadWallpaper() {
         new DirectEngine("DirectEngine", "https://api.ixiaowai.cn/gqapi/gqapi.php", "build/wallpaper")
-                .downLoadWallpaper(new IWallpaperEngine.SimpleCallback() {
+                .downLoadWallpaper(new IWallpaperEngine.SimpleDownloadCallback() {
                     @Override
                     public void onSucceed(File file) {
                         Log.d(TAG, "onSucceed() called with: file = [" + file + "]");

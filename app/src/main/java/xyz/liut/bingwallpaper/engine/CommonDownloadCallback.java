@@ -14,31 +14,31 @@ import xyz.liut.bingwallpaper.http.HttpException;
  * <p>
  * Create by liut on 20-12-25
  */
-public class DownloadCallbackAdapter extends FileDownloadCallback.SimpleCallback {
+public class CommonDownloadCallback extends FileDownloadCallback.SimpleCallback {
 
-    private final IWallpaperEngine.Callback callback;
+    private final IWallpaperEngine.DownloadCallback downloadCallback;
 
-    public DownloadCallbackAdapter(@NonNull IWallpaperEngine.Callback callback) {
-        this.callback = callback;
+    public CommonDownloadCallback(@NonNull IWallpaperEngine.DownloadCallback downloadCallback) {
+        this.downloadCallback = downloadCallback;
     }
 
     @Override
     public void onProgress(long totalBytesRead, long totalBytes) {
         if (totalBytes == -1) {
-            callback.onProgressMessage("下载中 " + plainLength(totalBytesRead) + "k");
+            downloadCallback.onProgressMessage("下载中 " + plainLength(totalBytesRead) + "k");
         } else {
-            callback.onProgressMessage("下载中 " + plainLength(totalBytesRead) + "/" + plainLength(totalBytes) + "k");
+            downloadCallback.onProgressMessage("下载中 " + plainLength(totalBytesRead) + "/" + plainLength(totalBytes) + "k");
         }
     }
 
     @Override
     public void onCompleted(File file) {
-        callback.onSucceed(file);
+        downloadCallback.onSucceed(file);
     }
 
     @Override
     public void onError(HttpException e) {
-        callback.onFailed(e);
+        downloadCallback.onFailed(e);
     }
 
     @SuppressLint("DefaultLocale")

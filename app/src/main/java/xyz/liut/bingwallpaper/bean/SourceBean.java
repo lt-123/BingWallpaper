@@ -67,6 +67,7 @@ public class SourceBean implements Serializable {
     }
 
 
+    @NonNull
     @Override
     public String toString() {
         return "SourceBean{" +

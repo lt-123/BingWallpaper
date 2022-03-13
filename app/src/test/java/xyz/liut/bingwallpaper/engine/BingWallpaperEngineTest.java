@@ -14,7 +14,7 @@ public class BingWallpaperEngineTest extends BaseTestCase {
 
     @Test
     public void setWallpaper() {
-        new BingWallpaperEngine("build/wallpaper", BingWallpaperEngine.RESOLUTION_UHD).downLoadWallpaper(new IWallpaperEngine.SimpleCallback() {
+        new BingWallpaperEngine("build/wallpaper", BingWallpaperEngine.RESOLUTION_UHD).downLoadWallpaper(new IWallpaperEngine.SimpleDownloadCallback() {
             @Override
             public void onSucceed(File file) {
                 System.out.println(file);

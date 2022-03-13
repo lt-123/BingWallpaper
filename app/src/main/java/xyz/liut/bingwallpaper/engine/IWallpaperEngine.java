@@ -28,14 +28,14 @@ public interface IWallpaperEngine {
     /**
      * 下载并设置壁纸
      *
-     * @param callback 下载回调
+     * @param downloadCallback 下载回调
      */
-    void downLoadWallpaper(@NonNull Callback callback);
+    void downLoadWallpaper(@NonNull DownloadCallback downloadCallback);
 
     /**
      * 回调
      */
-    interface Callback {
+    interface DownloadCallback {
 
         /**
          * 完成
@@ -59,7 +59,7 @@ public interface IWallpaperEngine {
 
     }
 
-    abstract class SimpleCallback implements Callback {
+    abstract class SimpleDownloadCallback implements DownloadCallback {
         @Override
         public void onProgressMessage(String msg) {
         }

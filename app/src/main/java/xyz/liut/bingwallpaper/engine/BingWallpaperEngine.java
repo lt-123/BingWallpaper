@@ -71,13 +71,13 @@ public class BingWallpaperEngine implements IWallpaperEngine {
     }
 
     @Override
-    public void downLoadWallpaper(@NonNull Callback callback) {
+    public void downLoadWallpaper(@NonNull DownloadCallback downloadCallback) {
         Log.d(TAG, "setWallpaper() called with: path = [" + path + "]");
         try {
             // ----------- 获取 URL
             Response<String> response = HttpClient.getInstance().doRequest(Method.get, BING_WALLPAPER_API);
             if (response.getError() != null) {
-                callback.onFailed(response.getError());
+                downloadCallback.onFailed(response.getError());
                 return;
             }
 
@@ -89,16 +89,16 @@ public class BingWallpaperEngine implements IWallpaperEngine {
                     .getJSONObject(0);
 
             String copyright = jo.getString("copyright");
-            callback.onMessage(copyright);
+            downloadCallback.onMessage(copyright);
 
             String urlbase = jo.getString("urlbase");
             String jpgUrl = BING_URL + urlbase + "_" + resolutions + ".jpg";
 
             String fileName = path + File.separator + urlbase.split("=")[1] + "_" + resolutions + ".jpg";
 
-            HttpClient.getInstance().download(jpgUrl, fileName, new DownloadCallbackAdapter(callback));
+            HttpClient.getInstance().download(jpgUrl, fileName, new CommonDownloadCallback(downloadCallback));
         } catch (Exception e) {
-            callback.onFailed(e);
+            downloadCallback.onFailed(e);
         }
     }
 
