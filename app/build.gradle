@@ -1,5 +1,5 @@
 plugins {
-    id "xyz.liut.release"
+//    id "xyz.liut.release"
     id "com.android.application"
 }
 
@@ -45,14 +45,14 @@ android {
 
 }
 
-outputApk {
-    fileNameTemplate = 'bingwallpaper-$b-$vn'
-    jiaguFileNameTemplate = 'bingwallpaper-$b-$vn'
-    jiaguCmdParams = "-autosign -automulpkg"
-    outputPath = './output/'
-    jiaguOutputPath = './output/'
-    openDir = true
-}
+//outputApk {
+//    fileNameTemplate = 'bingwallpaper-$b-$vn'
+//    jiaguFileNameTemplate = 'bingwallpaper-$b-$vn'
+//    jiaguCmdParams = "-autosign -automulpkg"
+//    outputPath = './output/'
+//    jiaguOutputPath = './output/'
+//    openDir = true
+//}
 
 dependencies {
     //---- test -----
