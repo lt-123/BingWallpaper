@@ -8,10 +8,12 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import xyz.liut.bingwallpaper.BaseTestCase;
+
 /**
  * Bing 壁纸来源测试。
  */
-public class BingWallpaperSourceTest {
+public class BingWallpaperSourceTest extends BaseTestCase {
 
     private static final String SAMPLE_JSON = "{"
             + "\"images\":[{"
