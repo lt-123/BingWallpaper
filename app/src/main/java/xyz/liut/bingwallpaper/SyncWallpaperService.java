@@ -3,7 +3,6 @@ package xyz.liut.bingwallpaper;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.app.job.JobScheduler;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
@@ -12,33 +11,31 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
-import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
-import xyz.liut.bingwallpaper.bean.SourceBean;
-import xyz.liut.bingwallpaper.engine.EngineFactory;
-import xyz.liut.bingwallpaper.engine.IWallpaperEngine;
-import xyz.liut.bingwallpaper.utils.NetworkUtil;
-import xyz.liut.bingwallpaper.utils.SpTool;
 import xyz.liut.bingwallpaper.utils.ToastUtil;
-import xyz.liut.bingwallpaper.utils.WallpaperTool;
+import xyz.liut.bingwallpaper.v3.network.HttpDownloader;
+import xyz.liut.bingwallpaper.v3.schedule.ScheduleManager;
+import xyz.liut.bingwallpaper.v3.settings.SettingsStore;
+import xyz.liut.bingwallpaper.v3.source.BingWallpaperSource;
+import xyz.liut.bingwallpaper.v3.storage.WallpaperStore;
+import xyz.liut.bingwallpaper.v3.sync.SyncResult;
+import xyz.liut.bingwallpaper.v3.sync.WallpaperSyncUseCase;
+import xyz.liut.bingwallpaper.v3.wallpaper.WallpaperSetter;
 
 /**
  * 同步壁纸
  */
-public class SyncWallpaperService extends Service implements IWallpaperEngine.Callback {
+public class SyncWallpaperService extends Service {
 
     private static final String TAG = "SyncWallpaperService";
+    private static final int MAX_RETRY_COUNT = 3;
 
-    /**
-     * 失败重试次数
-     */
-    private volatile int retryTime;
-
-    private volatile IWallpaperEngine engine;
-
-    private volatile SpTool spTool;
-
+    private volatile SettingsStore settingsStore;
+    private volatile BingWallpaperSource wallpaperSource;
+    private volatile ScheduleManager scheduleManager;
+    private volatile WallpaperSyncUseCase syncUseCase;
     private volatile Thread wallpaperThread;
 
     /**
@@ -55,29 +52,26 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
     @Override
     public void onCreate() {
         super.onCreate();
-        spTool = SpTool.getDefault(this);
 
-        // 默认源
-        SourceBean sourceBean = SourceManager.getDefaultSource(this);
-
-        // 根据源获取引擎
-        engine = EngineFactory.getDefault(this).getEngineBySourceBean(sourceBean);
+        settingsStore = new SettingsStore(this);
+        HttpDownloader httpDownloader = new HttpDownloader();
+        wallpaperSource = new BingWallpaperSource();
+        WallpaperStore wallpaperStore = new WallpaperStore(this);
+        WallpaperSetter wallpaperSetter = new WallpaperSetter(this);
+        scheduleManager = new ScheduleManager(this);
+        syncUseCase = new WallpaperSyncUseCase(
+                wallpaperSource,
+                wallpaperStore,
+                settingsStore,
+                wallpaperSetter,
+                httpDownloader);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (wallpaperThread == null) {
-            boolean onlyWifi = spTool.get(Constants.Default.KEY_ONLY_WIFI, false);
-            boolean wifiState = NetworkUtil.isWifi(this);
-
-            if (!onlyWifi || wifiState) {
-                wallpaperThread = new Thread(this::syncWallpaper);
-                wallpaperThread.start();
-            } else {
-                setNotification("only wifi");
-                stopSelf();
-                Log.w(TAG, "only wifi： " + onlyWifi + " wifi state： " + wifiState);
-            }
+            wallpaperThread = new Thread(this::syncWallpaper);
+            wallpaperThread.start();
         } else {
             setNotification("wallpaperThread 正在执行中");
             Log.w(TAG, "wallpaperThread 正在执行中");
@@ -86,154 +80,82 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
     }
 
     private void syncWallpaper() {
-        Log.d(TAG, "onHandleIntent: start ====");
-
-        setNotification("下载中...");
-
-        // 开始下载
-        engine.downLoadWallpaper(this);
-
+        Log.d(TAG, "syncWallpaper: start");
         try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            runSyncWithRetry();
+        } finally {
+            wallpaperThread = null;
+            stopSelf();
         }
-        stopSelf();
-        wallpaperThread = null;
-    }
-
-    @Override
-    public void onSucceed(File file) {
-        retryTime = 0;
-
-        try {
-            boolean setLockScreen = SpTool.getDefault(this).get(Constants.Default.KEY_LOCK_SCREEN, false);
-            WallpaperTool.setFile2Wallpaper(SyncWallpaperService.this, file, setLockScreen);
-            showMsg("设置壁纸成功");
-
-            // 设置定时
-            setJob(true);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            showMsg("不支持设置壁纸: " + e.getMessage());
-        }
-
-        // 保存文件
-        saveFile(file);
-
-    }
-
-
-    /**
-     * 普通消息
-     *
-     * @param msg 消息
-     */
-    @Override
-    public void onMessage(String msg) {
-        showMsg(msg);
     }
 
     /**
-     * 进度信息更新到通知栏
-     *
-     * @param msg 进度消息
+     * 执行 v3 同步流程。
+     * <p>
+     * 首次同步失败后最多再重试 3 次；成功后恢复用户配置的定时任务，
+     * 最终失败时安排 30 分钟后的补偿重试。
      */
-    @Override
-    public void onProgressMessage(String msg) {
-        setNotification(msg);
-    }
+    private void runSyncWithRetry() {
+        for (int retryCount = 0; retryCount <= MAX_RETRY_COUNT; retryCount++) {
+            int attempt = retryCount + 1;
+            setNotification("正在同步壁纸（第 " + attempt + " 次）...");
 
-    @Override
-    public void onFailed(Exception e) {
-        Log.d(TAG, "onFailed() called with: msg = [" + e.getMessage() + "], retryTime=" + retryTime);
-        e.printStackTrace();
-
-        if (retryTime < 3) {
-            //noinspection NonAtomicOperationOnVolatileField
-            retryTime++;
-            showMsg("下载出错: " + e.getMessage() + ", 正在重试(" + retryTime + "/3)...");
-            engine.downLoadWallpaper(this);
-        } else {
-            showMsg("同步壁纸失败");
-
-            setJob(false);
-        }
-
-    }
-
-
-    /**
-     * 保存壁纸文件
-     *
-     * @param file 文件
-     */
-    private void saveFile(File file) {
-        boolean isSave = spTool.get(Constants.Default.KEY_SAVE, false);
-        if (isSave) {
-            try {
-                File dir = new File(Constants.Config.WALLPAPER_SAVE_PATH + engine.engineName() + File.separator);
-                if (!dir.exists()) {
-                    boolean r = dir.mkdirs();
-                    Log.d(TAG, "创建文件夹: " + r);
-                }
-                if (dir.exists()) {
-                    File dest = new File(dir, file.getName());
-                    boolean ret = file.renameTo(dest);
-                    Log.d(TAG, "dest ret: " + ret);
-
-                    if (!ret) {
-                        showMsg("保存文件失败: " + dest);
-                    }
-                } else {
-                    Log.e(TAG, "创建文件夹失败: " + dir);
-
-                }
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                showMsg("保存文件失败: " + e.getMessage());
+            SyncResult result = syncUseCase.sync();
+            if (result.isSuccess()) {
+                showMsg("设置壁纸成功");
+                scheduleConfiguredJobs();
+                return;
             }
-        } else {
-            //noinspection ResultOfMethodCallIgnored
-            file.delete();
-        }
-    }
 
-    /**
-     * 设置定时任务
-     *
-     * @param bool 是否成功的
-     */
-    private void setJob(boolean bool) {
-        JobScheduler scheduler = (JobScheduler) getApplication().getSystemService(JOB_SCHEDULER_SERVICE);
-        if (scheduler == null) {
-            showMsg("不支持自动同步壁纸");
-            return;
-        }
-        scheduler.cancelAll();
-
-        if (!bool) {
-            AlarmJob.setupDelay(this, 30, 30 * 2);
-            showMsg("设置壁纸失败，半个多小时后自动重试");
-        }
-
-        List<String> timedList = TimedListManager.loadTimedList(this);
-        for (String timed : timedList) {
-            // 时间, 格式: hh:mm
-            String[] times = timed.split(":");
-            int hour = Integer.parseInt(times[0]);
-            int minute = Integer.parseInt(times[1]);
-
-            boolean scheduleResult = AlarmJob.setupTimed(this, hour, minute, 30);
-            if (scheduleResult) {
-                Log.i(TAG, "定时ok");
+            Exception exception = result.getException();
+            if (exception != null) {
+                Log.w(TAG, "sync failed: " + result.getMessage(), exception);
             } else {
-                showMsg("不支持自动同步壁纸");
-                break;
+                Log.w(TAG, "sync failed: " + result.getMessage());
+            }
+
+            if (retryCount < MAX_RETRY_COUNT) {
+                setNotification("同步壁纸失败，正在重试（" + (retryCount + 1) + "/" + MAX_RETRY_COUNT + "）...");
             }
         }
+
+        showMsg("同步壁纸失败，30 分钟后自动重试");
+        scheduleRetryJob();
+    }
+
+    /**
+     * 根据用户配置重新安排每日定时同步任务。
+     */
+    private void scheduleConfiguredJobs() {
+        List<int[]> timedJobs = parseTimedJobs(settingsStore.timedList());
+        if (!scheduleManager.scheduleDaily(timedJobs)) {
+            showMsg("不支持自动同步壁纸");
+        }
+    }
+
+    /**
+     * 安排最终失败后的延迟重试任务。
+     */
+    private void scheduleRetryJob() {
+        if (!scheduleManager.scheduleRetry()) {
+            showMsg("不支持自动同步壁纸");
+        }
+    }
+
+    private List<int[]> parseTimedJobs(List<String> timedList) {
+        List<int[]> jobs = new ArrayList<>();
+        for (String timed : timedList) {
+            try {
+                // 用户配置格式为 HH:mm，解析失败时跳过单个异常配置，不影响其他定时任务。
+                String[] times = timed.split(":");
+                int hour = Integer.parseInt(times[0]);
+                int minute = Integer.parseInt(times[1]);
+                jobs.add(new int[]{hour, minute});
+            } catch (RuntimeException e) {
+                Log.w(TAG, "invalid timed job: " + timed, e);
+            }
+        }
+        return jobs;
     }
 
     /**
@@ -264,7 +186,7 @@ public class SyncWallpaperService extends Service implements IWallpaperEngine.Ca
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent)
                 .setSmallIcon(R.mipmap.ic_bing)
-                .setContentTitle(engine.engineName())
+                .setContentTitle(wallpaperSource.name())
                 .setContentText(msg);
 
         startForeground(1, builder.build());
