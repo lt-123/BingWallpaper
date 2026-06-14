@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="xyz.liut.bingwallpaper">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -46,7 +45,8 @@
         <!-- 真正的程序入口 / 设置壁纸入口 / 长按瓷砖入口 -->
         <activity
             android:name=".SettingActivity"
-            android:excludeFromRecents="true">
+            android:excludeFromRecents="true"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.SET_WALLPAPER" />
                 <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
@@ -60,6 +60,7 @@
             android:name=".ManualSetActivity"
             android:enabled="false"
             android:excludeFromRecents="true"
+            android:exported="true"
             android:label="@string/manual_set_label"
             android:theme="@style/NoActionBar">
             <intent-filter>

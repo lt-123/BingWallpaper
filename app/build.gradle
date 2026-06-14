@@ -1,42 +1,47 @@
 plugins {
-//    id "xyz.liut.release"
     id "com.android.application"
 }
 
 android {
-    compileSdkVersion 30
+    namespace = "xyz.liut.bingwallpaper"
+    compileSdk = 36
+
+    buildFeatures {
+        buildConfig = true
+        resValues = true
+    }
 
     defaultConfig {
-        applicationId "xyz.liut.bingwallpaper"
-        minSdkVersion 21
-        targetSdkVersion 30
+        applicationId = "xyz.liut.bingwallpaper"
+        minSdk = 21
+        targetSdk = 36
 
-        versionCode rootProject.ext.versionCode
-        versionName rootProject.ext.versionName
+        versionCode = rootProject.ext.versionCode
+        versionName = rootProject.ext.versionName
 
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         debug {
-            applicationIdSuffix ".debug"
+            applicationIdSuffix = ".debug"
             resValue "string", "app_name", "@string/app_name_debug"
         }
 
         release {
-            minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            minifyEnabled = true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             resValue "string", "app_name", "@string/app_name_release"
         }
     }
 
-    lintOptions {
+    lint {
         disable 'GoogleAppIndexingWarning'
     }
 
     compileOptions {
-        sourceCompatibility = '1.8'
-        targetCompatibility = '1.8'
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 
     testOptions {
@@ -45,26 +50,18 @@ android {
 
 }
 
-//outputApk {
-//    fileNameTemplate = 'bingwallpaper-$b-$vn'
-//    jiaguFileNameTemplate = 'bingwallpaper-$b-$vn'
-//    jiaguCmdParams = "-autosign -automulpkg"
-//    outputPath = './output/'
-//    jiaguOutputPath = './output/'
-//    openDir = true
-//}
 
 dependencies {
     //---- test -----
-    testImplementation 'org.robolectric:robolectric:4.4'
+    testImplementation 'org.robolectric:robolectric:4.16'
     testImplementation 'javax.inject:javax.inject:1'
-    testImplementation 'junit:junit:4.13.1'
-    testImplementation 'androidx.test:core:1.3.0'
-    androidTestImplementation 'com.android.support.test:runner:1.0.2'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'androidx.test:core:1.7.0'
+    androidTestImplementation 'androidx.test:runner:1.7.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.7.0'
 
     //---- provided -----
-    compileOnly "androidx.annotation:annotation:1.1.0"
+    compileOnly "androidx.annotation:annotation:1.9.1"
 
     //---- compile -----
     implementation fileTree(dir: 'libs', include: ['*.jar'])

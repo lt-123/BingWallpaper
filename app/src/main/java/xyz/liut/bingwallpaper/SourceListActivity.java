@@ -88,14 +88,12 @@ public class SourceListActivity extends Activity {
     @SuppressWarnings("SwitchStatementWithTooFewBranches")
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.menu_add_source:
-                startActivity(new Intent(this, AddSourceActivity.class));
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
+        int id = item.getItemId();
+        if (id == R.id.menu_add_source) {
+            startActivity(new Intent(this, AddSourceActivity.class));
+            return true;
         }
+        return super.onOptionsItemSelected(item);
     }
 
 }
-
