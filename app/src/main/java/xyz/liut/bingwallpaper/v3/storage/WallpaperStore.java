@@ -25,6 +25,19 @@ public class WallpaperStore {
     private static final String CACHE_DIR_NAME = "wallpapers";
     private static final String MIME_TYPE_JPEG = "image/jpeg";
 
+    private final Context appContext;
+
+    /**
+     * 创建壁纸保存器。
+     * <p>
+     * 保存应用级 Context，避免调用方在每次保存时重复传入 Context，也避免持有 Activity。
+     *
+     * @param context Android 上下文
+     */
+    public WallpaperStore(Context context) {
+        this.appContext = context.getApplicationContext();
+    }
+
     /**
      * 输出流写入回调。
      */
@@ -41,24 +54,23 @@ public class WallpaperStore {
     /**
      * 保存壁纸。
      *
-     * @param context       Android 上下文
      * @param wallpaperInfo 壁纸信息
      * @param saveToGallery 是否保存到系统相册
      * @param writer        图片内容写入回调
      * @return 保存后的壁纸位置
      * @throws IOException 创建目标、打开输出流或写入失败
      */
-    public StoredWallpaper save(Context context, WallpaperInfo wallpaperInfo, boolean saveToGallery,
-                                OutputWriter writer) throws IOException {
+    public StoredWallpaper save(WallpaperInfo wallpaperInfo, boolean saveToGallery, OutputWriter writer)
+            throws IOException {
         if (saveToGallery) {
-            return saveToMediaStore(context, wallpaperInfo, writer);
+            return saveToMediaStore(wallpaperInfo, writer);
         }
-        return saveToCache(context, wallpaperInfo, writer);
+        return saveToCache(wallpaperInfo, writer);
     }
 
-    private StoredWallpaper saveToMediaStore(Context context, WallpaperInfo wallpaperInfo, OutputWriter writer)
+    private StoredWallpaper saveToMediaStore(WallpaperInfo wallpaperInfo, OutputWriter writer)
             throws IOException {
-        ContentResolver resolver = context.getContentResolver();
+        ContentResolver resolver = appContext.getContentResolver();
         ContentValues values = new ContentValues();
         values.put(MediaStore.Images.Media.DISPLAY_NAME, wallpaperInfo.getFileName());
         values.put(MediaStore.Images.Media.MIME_TYPE, MIME_TYPE_JPEG);
@@ -93,9 +105,9 @@ public class WallpaperStore {
         return StoredWallpaper.mediaStore(uri);
     }
 
-    private StoredWallpaper saveToCache(Context context, WallpaperInfo wallpaperInfo, OutputWriter writer)
+    private StoredWallpaper saveToCache(WallpaperInfo wallpaperInfo, OutputWriter writer)
             throws IOException {
-        File dir = new File(context.getCacheDir(), CACHE_DIR_NAME);
+        File dir = new File(appContext.getCacheDir(), CACHE_DIR_NAME);
         if (!dir.exists() && !dir.mkdirs()) {
             throw new IOException("Failed to create cache directory: " + dir);
         }
