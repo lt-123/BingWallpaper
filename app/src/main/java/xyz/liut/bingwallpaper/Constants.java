@@ -28,6 +28,9 @@ public interface Constants {
          */
         String KEY_SAVE = "KEY_SAVE";
 
+        /** 保存到系统相册 KEY。 */
+        String KEY_SAVE_TO_GALLERY = "KEY_SAVE_TO_GALLERY";
+
         /**
          * 同时设置锁屏 KEY
          */
