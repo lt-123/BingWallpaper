@@ -31,4 +31,23 @@ public class ScheduleManagerTest {
 
         Assert.assertEquals(24 * 60, delayMinutes);
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void nextDelayMinutesRejectsInvalidHour() {
+        Calendar now = Calendar.getInstance();
+
+        ScheduleManager.nextDelayMinutes(now, 24, 0);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void nextDelayMinutesRejectsInvalidMinute() {
+        Calendar now = Calendar.getInstance();
+
+        ScheduleManager.nextDelayMinutes(now, 8, 60);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void validateScheduleOptionsRejectsNegativeDelayMinute() {
+        ScheduleManager.validateScheduleOptions(8, 30, -1);
+    }
 }

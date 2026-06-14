@@ -22,7 +22,14 @@ public class ScheduleManager {
 
     private static final String TAG = "ScheduleManager";
     private static final long MINUTE_MILLIS = 60 * 1000L;
+    /*
+     * JobId 保留区间：
+     * 30000-31439：每日 HH:mm 任务，按 hour * 60 + minute 映射，避免非法时间归一化后碰撞。
+     * 39998：通用延迟任务，当前只需要一个，重复调度时有意替换同一任务。
+     * 39999：同步失败后的 30 分钟重试任务。
+     */
     private static final int DAILY_JOB_ID_BASE = 30000;
+    private static final int GENERIC_DELAY_JOB_ID = 39998;
     private static final int RETRY_JOB_ID = 39999;
     private static final int DEFAULT_DELAY_MINUTES = 30;
     private static final int RETRY_DELAY_MINUTES = 30;
@@ -52,6 +59,8 @@ public class ScheduleManager {
      * @return 下一次触发距离当前时间的分钟数
      */
     public static long nextDelayMinutes(Calendar now, int hour, int minute) {
+        validateTime(hour, minute);
+
         Calendar targetTime = (Calendar) now.clone();
         targetTime.set(Calendar.HOUR_OF_DAY, hour);
         targetTime.set(Calendar.MINUTE, minute);
@@ -96,6 +105,7 @@ public class ScheduleManager {
      * @return 调度成功时返回 true
      */
     public boolean scheduleDaily(int hour, int minute, int delayMinute) {
+        validateScheduleOptions(hour, minute, delayMinute);
         long minLatencyMinutes = nextDelayMinutes(Calendar.getInstance(), hour, minute);
         long maxExecutionDelayMinutes = minLatencyMinutes + delayMinute;
         return scheduleDelay(dailyJobId(hour, minute), minLatencyMinutes, maxExecutionDelayMinutes);
@@ -118,7 +128,7 @@ public class ScheduleManager {
      * @return 调度成功时返回 true
      */
     public boolean scheduleDelay(long minLatencyMinutes, long maxExecutionDelayMinutes) {
-        return scheduleDelay((int) System.currentTimeMillis(), minLatencyMinutes, maxExecutionDelayMinutes);
+        return scheduleDelay(GENERIC_DELAY_JOB_ID, minLatencyMinutes, maxExecutionDelayMinutes);
     }
 
     private boolean scheduleDelay(int jobId, long minLatencyMinutes, long maxExecutionDelayMinutes) {
@@ -142,5 +152,21 @@ public class ScheduleManager {
 
     private static int dailyJobId(int hour, int minute) {
         return DAILY_JOB_ID_BASE + hour * 60 + minute;
+    }
+
+    static void validateScheduleOptions(int hour, int minute, int delayMinute) {
+        validateTime(hour, minute);
+        if (delayMinute < 0) {
+            throw new IllegalArgumentException("delayMinute must be >= 0");
+        }
+    }
+
+    private static void validateTime(int hour, int minute) {
+        if (hour < 0 || hour > 23) {
+            throw new IllegalArgumentException("hour must be between 0 and 23");
+        }
+        if (minute < 0 || minute > 59) {
+            throw new IllegalArgumentException("minute must be between 0 and 59");
+        }
     }
 }
