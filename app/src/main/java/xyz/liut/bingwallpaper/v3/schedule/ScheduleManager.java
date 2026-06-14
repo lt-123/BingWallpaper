@@ -121,6 +121,15 @@ public class ScheduleManager {
     }
 
     /**
+     * 取消同步失败后安排的补偿重试任务。
+     * <p>
+     * 成功同步后只清理重试任务，避免影响用户配置的每日定时任务。
+     */
+    public void cancelRetry() {
+        scheduler.cancel(RETRY_JOB_ID);
+    }
+
+    /**
      * 按延迟分钟数安排一次同步任务。
      *
      * @param minLatencyMinutes        最早多少分钟后执行

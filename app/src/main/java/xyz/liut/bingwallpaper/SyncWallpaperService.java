@@ -70,7 +70,12 @@ public class SyncWallpaperService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (wallpaperThread == null) {
-            wallpaperThread = new Thread(this::syncWallpaper);
+            wallpaperThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    syncWallpaper(startId);
+                }
+            });
             wallpaperThread.start();
         } else {
             setNotification("wallpaperThread 正在执行中");
@@ -79,13 +84,13 @@ public class SyncWallpaperService extends Service {
         return START_NOT_STICKY;
     }
 
-    private void syncWallpaper() {
+    private void syncWallpaper(int startId) {
         Log.d(TAG, "syncWallpaper: start");
         try {
             runSyncWithRetry();
         } finally {
             wallpaperThread = null;
-            stopSelf();
+            stopSelf(startId);
         }
     }
 
@@ -103,6 +108,7 @@ public class SyncWallpaperService extends Service {
             SyncResult result = syncUseCase.sync();
             if (result.isSuccess()) {
                 showMsg("设置壁纸成功");
+                scheduleManager.cancelRetry();
                 scheduleConfiguredJobs();
                 return;
             }
@@ -180,7 +186,11 @@ public class SyncWallpaperService extends Service {
         }
 
         Intent intent = new Intent(this, SettingActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 11, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                this,
+                11,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         builder
                 .setAutoCancel(true)

@@ -11,6 +11,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
@@ -79,7 +80,9 @@
         <activity android:name=".AboutActivity" />
 
         <!-- 同步壁纸服务 -->
-        <service android:name=".SyncWallpaperService" />
+        <service
+            android:name=".SyncWallpaperService"
+            android:foregroundServiceType="dataSync" />
 
 
         <!-- 定时器 -->
