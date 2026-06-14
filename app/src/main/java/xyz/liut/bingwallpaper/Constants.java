@@ -1,9 +1,5 @@
 package xyz.liut.bingwallpaper;
 
-import android.os.Environment;
-
-import java.io.File;
-
 /**
  * 常量值
  * <p>
@@ -62,10 +58,9 @@ public interface Constants {
     interface Config {
 
         /**
-         * 文件保存路径
+         * 使用 MediaStore 保存到公共图片库时的相对目录。
          */
-        String WALLPAPER_SAVE_PATH = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + File.separator + "wallpaper" + File.separator;
-
+        String MEDIASTORE_RELATIVE_PATH = "Pictures/BingWallpaper";
 
         /**
          * 通知通道ID和名称
@@ -75,4 +70,3 @@ public interface Constants {
     }
 
 }
-
