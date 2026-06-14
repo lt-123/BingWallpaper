@@ -80,6 +80,8 @@ public class SyncWallpaperService extends Service {
         } else {
             setNotification("wallpaperThread 正在执行中");
             Log.w(TAG, "wallpaperThread 正在执行中");
+            // 重复启动只确认本次请求，不打断当前正在执行的同步。
+            stopSelf(startId);
         }
         return START_NOT_STICKY;
     }
