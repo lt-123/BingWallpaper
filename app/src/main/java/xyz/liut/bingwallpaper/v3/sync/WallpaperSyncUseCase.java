@@ -76,9 +76,12 @@ public class WallpaperSyncUseCase {
                     downloader.download(info.getImageUrl(), output, progressCallback);
                 }
             });
-            setter.set(stored, settings.setLockScreen());
-            // 临时缓存清理：成功设置壁纸后删除缓存文件，已保存到相册的图片不会被删除。
-            stored.deleteTemporary();
+            try {
+                setter.set(stored, settings.setLockScreen());
+            } finally {
+                // 临时缓存清理：保存完成后无论设置成功或失败都清理缓存文件，已保存到相册的图片不会被删除。
+                stored.deleteTemporary();
+            }
             return SyncResult.success(SUCCESS_MESSAGE);
         } catch (Exception e) {
             return SyncResult.failure("同步失败: " + e.getMessage(), e);

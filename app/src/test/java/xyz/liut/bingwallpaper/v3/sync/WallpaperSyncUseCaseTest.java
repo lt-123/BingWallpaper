@@ -73,6 +73,24 @@ public class WallpaperSyncUseCaseTest {
         Assert.assertFalse(cacheFile.exists());
     }
 
+    @Test
+    public void syncDeletesTemporaryCacheResultWhenSetterFails() throws Exception {
+        FakeSource source = new FakeSource();
+        File cacheFile = File.createTempFile("wallpaper-sync-use-case-setter-fails", ".jpg");
+        FakeStore store = new FakeStore(StoredWallpaper.cache(cacheFile));
+        FakeSettings settings = new FakeSettings(false, false);
+        FakeSetter setter = new FakeSetter(new IOException("setter failed"));
+        FakeDownloader downloader = new FakeDownloader();
+        WallpaperSyncUseCase useCase = new WallpaperSyncUseCase(source, store, settings, setter, downloader);
+
+        SyncResult result = useCase.sync();
+
+        Assert.assertFalse(result.isSuccess());
+        Assert.assertTrue(result.getMessage().contains("setter failed"));
+        Assert.assertNotNull(result.getException());
+        Assert.assertFalse(cacheFile.exists());
+    }
+
     private static class FakeSource implements WallpaperSource {
         private final WallpaperInfo info =
                 new WallpaperInfo("https://example.com/wallpaper.jpg", "wallpaper.jpg", "标题", "描述");
@@ -146,15 +164,27 @@ public class WallpaperSyncUseCaseTest {
     }
 
     private static class FakeSetter implements WallpaperSyncUseCase.Setter {
+        private final IOException exception;
         private boolean set;
         private StoredWallpaper storedWallpaper;
         private boolean lockScreen;
 
+        private FakeSetter() {
+            this(null);
+        }
+
+        private FakeSetter(IOException exception) {
+            this.exception = exception;
+        }
+
         @Override
-        public void set(StoredWallpaper storedWallpaper, boolean lockScreen) {
+        public void set(StoredWallpaper storedWallpaper, boolean lockScreen) throws IOException {
             set = true;
             this.storedWallpaper = storedWallpaper;
             this.lockScreen = lockScreen;
+            if (exception != null) {
+                throw exception;
+            }
         }
     }
 
