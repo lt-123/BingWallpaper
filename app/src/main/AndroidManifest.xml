@@ -67,12 +67,6 @@
 
         </activity>
 
-        <!-- 源列表 -->
-        <activity android:name=".SourceListActivity" />
-
-        <!-- 添加源 -->
-        <activity android:name=".AddSourceActivity" />
-
         <!-- 定时列表 -->
         <activity android:name=".TimeListActivity" />
 

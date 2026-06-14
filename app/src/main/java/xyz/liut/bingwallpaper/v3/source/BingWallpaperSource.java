@@ -147,7 +147,7 @@ public class BingWallpaperSource implements WallpaperSource {
         public String get(String url) throws Exception {
             HttpURLConnection connection = connectionFactory.open(url);
             connection.setRequestMethod("GET");
-            // 与旧版 HttpClient 的等待时间保持接近，避免网络异常时长期阻塞。
+            // 等待时间保持较短，避免网络异常时长期阻塞。
             connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
             connection.setReadTimeout(READ_TIMEOUT_MS);
             try {
