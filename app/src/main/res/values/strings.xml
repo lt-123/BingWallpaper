@@ -9,8 +9,9 @@
     <string name="wallpaper_source">选择壁纸来源</string>
     <string name="update_time">设置定时更新</string>
     <string name="every_day">每天</string>
-    <string name="save_path">保存壁纸到手机</string>
-    <string name="no_save">不保存</string>
+    <string name="save_path">保存到相册</string>
+    <string name="save_to_gallery_desc">保存到 Pictures/BingWallpaper</string>
+    <string name="no_save">仅设置壁纸，不保存到相册</string>
     <string name="set_lock_screen">同时设置锁屏</string>
     <string name="bing_search">必应搜索</string>
     <string name="setup_now">立即设置</string>
