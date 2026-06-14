@@ -18,9 +18,12 @@ public class BingWallpaperSource implements WallpaperSource {
 
     public static final String API_URL = "https://www.bing.com/HPImageArchive.aspx?format=js&n=1";
     public static final String DEFAULT_RESOLUTION = "UHD";
+    public static final int CONNECT_TIMEOUT_MS = 3000;
+    public static final int READ_TIMEOUT_MS = 8000;
 
     private static final String BING_HOST = "https://www.bing.com";
     private static final String NAME = "Bing";
+    private static final String ID_PARAMETER = "id=";
 
     private final TextFetcher textFetcher;
     private final String resolution;
@@ -85,9 +88,24 @@ public class BingWallpaperSource implements WallpaperSource {
     }
 
     private static String fileNameFromUrlbase(String urlbase, String resolution) {
-        int index = urlbase.lastIndexOf('=');
-        String baseName = index >= 0 ? urlbase.substring(index + 1) : urlbase;
-        return baseName + "_" + resolution + ".jpg";
+        int idStart = urlbase.indexOf(ID_PARAMETER);
+        if (idStart < 0) {
+            throw new IllegalArgumentException("Unexpected Bing urlbase without id=: " + urlbase);
+        }
+
+        int valueStart = idStart + ID_PARAMETER.length();
+        int valueEnd = urlbase.indexOf('&', valueStart);
+        String imageId = valueEnd >= 0 ? urlbase.substring(valueStart, valueEnd) : urlbase.substring(valueStart);
+        if (imageId.length() == 0) {
+            throw new IllegalArgumentException("Unexpected Bing urlbase with empty id: " + urlbase);
+        }
+
+        String safeName = imageId.replaceAll("[^A-Za-z0-9._-]+", "_");
+        if (safeName.length() == 0) {
+            throw new IllegalArgumentException("Unexpected Bing urlbase with unsafe id: " + urlbase);
+        }
+
+        return safeName + "_" + resolution + ".jpg";
     }
 
     /**
@@ -104,12 +122,34 @@ public class BingWallpaperSource implements WallpaperSource {
         String get(String url) throws Exception;
     }
 
-    private static class UrlConnectionTextFetcher implements TextFetcher {
+    interface ConnectionFactory {
+        HttpURLConnection open(String url) throws Exception;
+    }
+
+    static class UrlConnectionTextFetcher implements TextFetcher {
+
+        private final ConnectionFactory connectionFactory;
+
+        UrlConnectionTextFetcher() {
+            this(new ConnectionFactory() {
+                @Override
+                public HttpURLConnection open(String url) throws Exception {
+                    return (HttpURLConnection) new URL(url).openConnection();
+                }
+            });
+        }
+
+        UrlConnectionTextFetcher(ConnectionFactory connectionFactory) {
+            this.connectionFactory = connectionFactory;
+        }
 
         @Override
         public String get(String url) throws Exception {
-            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+            HttpURLConnection connection = connectionFactory.open(url);
             connection.setRequestMethod("GET");
+            // 与旧版 HttpClient 的等待时间保持接近，避免网络异常时长期阻塞。
+            connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
+            connection.setReadTimeout(READ_TIMEOUT_MS);
             try {
                 InputStream inputStream = connection.getInputStream();
                 return readAll(inputStream);
