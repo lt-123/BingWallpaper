@@ -84,22 +84,24 @@ public class WallpaperStore {
             throw new IOException("Failed to insert MediaStore row");
         }
 
-        boolean success = false;
-        try (OutputStream outputStream = resolver.openOutputStream(uri)) {
-            if (outputStream == null) {
-                throw new IOException("Failed to open MediaStore output stream");
+        try {
+            try (OutputStream outputStream = resolver.openOutputStream(uri)) {
+                if (outputStream == null) {
+                    throw new IOException("Failed to open MediaStore output stream");
+                }
+                writer.write(outputStream);
             }
-            writer.write(outputStream);
-            success = true;
-        } finally {
-            if (success) {
-                ContentValues publishedValues = new ContentValues();
-                // IS_PENDING=0 发布图片，使其对相册和其他媒体应用可见。
-                publishedValues.put(MediaStore.Images.Media.IS_PENDING, 0);
-                resolver.update(uri, publishedValues, null, null);
-            } else {
-                resolver.delete(uri, null, null);
+
+            ContentValues publishedValues = new ContentValues();
+            // 输出流成功关闭后再发布；IS_PENDING=0 使图片对相册和其他媒体应用可见。
+            publishedValues.put(MediaStore.Images.Media.IS_PENDING, 0);
+            int updatedRows = resolver.update(uri, publishedValues, null, null);
+            if (updatedRows <= 0) {
+                throw new IOException("Failed to publish MediaStore row: " + uri);
             }
+        } catch (IOException | RuntimeException e) {
+            resolver.delete(uri, null, null);
+            throw e;
         }
 
         return StoredWallpaper.mediaStore(uri);
@@ -115,16 +117,45 @@ public class WallpaperStore {
             throw new IOException("Cache path is not a directory: " + dir);
         }
 
-        File file = new File(dir, wallpaperInfo.getFileName());
-        boolean success = false;
-        try (OutputStream outputStream = new FileOutputStream(file)) {
-            writer.write(outputStream);
-            success = true;
-        } finally {
-            if (!success && file.exists()) {
+        File file = createSafeCacheFile(dir, wallpaperInfo.getFileName());
+        try {
+            try (OutputStream outputStream = new FileOutputStream(file)) {
+                writer.write(outputStream);
+            }
+        } catch (IOException | RuntimeException e) {
+            if (file.exists()) {
                 file.delete();
             }
+            throw e;
         }
         return StoredWallpaper.cache(file);
+    }
+
+    private File createSafeCacheFile(File dir, String fileName) throws IOException {
+        if (fileName == null) {
+            throw new IOException("Wallpaper file name is empty");
+        }
+
+        String normalized = fileName.trim().replace('\\', '/');
+        String baseName = new File(normalized).getName();
+        if (baseName.length() == 0 || ".".equals(baseName) || "..".equals(baseName)) {
+            throw new IOException("Wallpaper file name is empty");
+        }
+
+        // 只保留安全的基本文件名字符，避免路径分隔符、控制字符或特殊字符影响缓存目录边界。
+        String safeName = baseName.replaceAll("[^A-Za-z0-9._-]", "_");
+        if (safeName.length() == 0 || ".".equals(safeName) || "..".equals(safeName)) {
+            throw new IOException("Wallpaper file name is empty");
+        }
+
+        File canonicalDir = dir.getCanonicalFile();
+        File file = new File(canonicalDir, safeName).getCanonicalFile();
+        String dirPath = canonicalDir.getPath();
+        String filePath = file.getPath();
+        // 写入前再次校验规范路径，确保缓存文件不能逃逸到 wallpapers 目录之外。
+        if (!filePath.equals(dirPath) && !filePath.startsWith(dirPath + File.separator)) {
+            throw new IOException("Unsafe wallpaper file path: " + file);
+        }
+        return file;
     }
 }
