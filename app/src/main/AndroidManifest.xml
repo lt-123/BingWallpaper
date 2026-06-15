@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="xyz.liut.bingwallpaper">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -12,10 +11,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-
-    <uses-permission
-        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        tools:ignore="ScopedStorage" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
@@ -25,7 +21,6 @@
         android:allowBackup="false"
         android:icon="@mipmap/ic_bing"
         android:label="@string/app_name"
-        android:requestLegacyExternalStorage="true"
         android:supportsRtl="false"
         android:usesCleartextTraffic="true"
         tools:ignore="UnusedAttribute">
@@ -46,7 +41,8 @@
         <!-- 真正的程序入口 / 设置壁纸入口 / 长按瓷砖入口 -->
         <activity
             android:name=".SettingActivity"
-            android:excludeFromRecents="true">
+            android:excludeFromRecents="true"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.SET_WALLPAPER" />
                 <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
@@ -60,6 +56,7 @@
             android:name=".ManualSetActivity"
             android:enabled="false"
             android:excludeFromRecents="true"
+            android:exported="true"
             android:label="@string/manual_set_label"
             android:theme="@style/NoActionBar">
             <intent-filter>
@@ -70,12 +67,6 @@
 
         </activity>
 
-        <!-- 源列表 -->
-        <activity android:name=".SourceListActivity" />
-
-        <!-- 添加源 -->
-        <activity android:name=".AddSourceActivity" />
-
         <!-- 定时列表 -->
         <activity android:name=".TimeListActivity" />
 
@@ -83,7 +74,9 @@
         <activity android:name=".AboutActivity" />
 
         <!-- 同步壁纸服务 -->
-        <service android:name=".SyncWallpaperService" />
+        <service
+            android:name=".SyncWallpaperService"
+            android:foregroundServiceType="dataSync" />
 
 
         <!-- 定时器 -->

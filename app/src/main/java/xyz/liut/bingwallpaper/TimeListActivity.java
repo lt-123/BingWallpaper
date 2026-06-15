@@ -5,7 +5,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.TimePickerDialog;
 import android.app.job.JobScheduler;
-import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -55,17 +54,13 @@ public class TimeListActivity extends Activity implements View.OnClickListener, 
     protected void onResume() {
         super.onResume();
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // 如果未忽略显示提醒按钮
-            if (!BatteryUtil.hasIgnoredBatteryOptimization(this)) {
-                btIgnoreBattery.setEnabled(true);
-                btIgnoreBattery.setOnClickListener(this);
-            } else {
-                btIgnoreBattery.setEnabled(false);
-                btIgnoreBattery.setText(getString(R.string.complete_ignore_battery));
-            }
+        // 如果未忽略显示提醒按钮
+        if (!BatteryUtil.hasIgnoredBatteryOptimization(this)) {
+            btIgnoreBattery.setEnabled(true);
+            btIgnoreBattery.setOnClickListener(this);
         } else {
-            btIgnoreBattery.setVisibility(View.GONE);
+            btIgnoreBattery.setEnabled(false);
+            btIgnoreBattery.setText(getString(R.string.complete_ignore_battery));
         }
     }
 
@@ -93,34 +88,29 @@ public class TimeListActivity extends Activity implements View.OnClickListener, 
     @SuppressLint({"NonConstantResourceId", "NewApi"})
     @Override
     public void onClick(View v) {
-        switch (v.getId()) {
+        int id = v.getId();
+        if (id == R.id.bt_add_timed) {
             // 添加定时
-            case R.id.bt_add_timed:
-                timePickerDialog.updateTime(0, 0);
-                timePickerDialog.show();
-                break;
+            timePickerDialog.updateTime(0, 0);
+            timePickerDialog.show();
+        } else if (id == R.id.bt_clear_timed) {
+            // 清空定时
+            llTimedList.removeAllViews();
+            TimedListManager.clear(this);
 
             // 清空定时
-            case R.id.bt_clear_timed:
-                llTimedList.removeAllViews();
-                TimedListManager.clear(this);
-
-                // 清空定时
-                JobScheduler scheduler = (JobScheduler) getApplication().getSystemService(JOB_SCHEDULER_SERVICE);
-                if (scheduler != null) {
-                    scheduler.cancelAll();
-                }
-                break;
-
+            JobScheduler scheduler = (JobScheduler) getApplication().getSystemService(JOB_SCHEDULER_SERVICE);
+            if (scheduler != null) {
+                scheduler.cancelAll();
+            }
+        } else if (id == R.id.bt_ignore_battery) {
             // 忽略电池优化
-            case R.id.bt_ignore_battery:
-                new AlertDialog
-                        .Builder(this)
-                        .setTitle("忽略电池优化")
-                        .setMessage("忽略电池优化会使本软件的定时更新功能更加稳定， 并不会增加耗电量， 请在接下来的提示中选择允许。")
-                        .setPositiveButton("确定", (dialog, which) -> BatteryUtil.ignoreBatteryOptimization(this))
-                        .show();
-                break;
+            new AlertDialog
+                    .Builder(this)
+                    .setTitle("忽略电池优化")
+                    .setMessage("忽略电池优化会使本软件的定时更新功能更加稳定， 并不会增加耗电量， 请在接下来的提示中选择允许。")
+                    .setPositiveButton("确定", (dialog, which) -> BatteryUtil.ignoreBatteryOptimization(this))
+                    .show();
         }
     }
 

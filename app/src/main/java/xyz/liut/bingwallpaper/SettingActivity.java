@@ -21,11 +21,10 @@ import androidx.annotation.NonNull;
 
 import java.util.List;
 
-import xyz.liut.bingwallpaper.bean.SourceBean;
 import xyz.liut.bingwallpaper.utils.ComponentUtil;
-import xyz.liut.bingwallpaper.utils.SpTool;
 import xyz.liut.bingwallpaper.utils.ToastUtil;
 import xyz.liut.bingwallpaper.utils.WallpaperTool;
+import xyz.liut.bingwallpaper.v3.settings.SettingsStore;
 
 /**
  * 主界面 设置页
@@ -35,43 +34,38 @@ public class SettingActivity extends Activity implements View.OnClickListener {
     private static final String TAG = "MainActivity";
 
 
-    private TextView tvSource, tvTime, tvSave, tvSetLockScreen, tvShowToast, tvOnlyWifi, tvShowManual, tvHideMain;
+    private TextView tvTime, tvSave, tvSetLockScreen, tvShowToast, tvShowManual, tvHideMain;
 
-    private Switch swSave, swLockScreen, swShowToast, swOnlyWifi, swShowManual, swHideMain;
+    private Switch swSave, swLockScreen, swShowToast, swShowManual, swHideMain;
 
-    private SpTool spTool;
+    private SettingsStore settingsStore;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_setting);
 
-        spTool = SpTool.getDefault(this);
+        settingsStore = new SettingsStore(this);
 
-        tvSource = findViewById(R.id.tv_source);
         tvTime = findViewById(R.id.tv_time);
         tvSave = findViewById(R.id.tv_save_path);
         tvSetLockScreen = findViewById(R.id.tv_set_lock_screen);
         tvShowToast = findViewById(R.id.tv_show_toast);
-        tvOnlyWifi = findViewById(R.id.tv_only_wifi);
         tvShowManual = findViewById(R.id.tv_show_manual);
         tvHideMain = findViewById(R.id.tv_hide_main);
 
         swSave = findViewById(R.id.sw_save);
         swLockScreen = findViewById(R.id.sw_lock_screen);
         swShowToast = findViewById(R.id.sw_show_toast);
-        swOnlyWifi = findViewById(R.id.sw_only_wifi);
         swShowManual = findViewById(R.id.sw_show_manual);
         swHideMain = findViewById(R.id.sw_show_main);
 
-        findViewById(R.id.ll_source).setOnClickListener(this);
         findViewById(R.id.ll_time).setOnClickListener(this);
 
         swSave.setOnClickListener(this);
         swLockScreen.setOnClickListener(this);
         swShowManual.setOnClickListener(this);
         swShowToast.setOnClickListener(this);
-        swOnlyWifi.setOnClickListener(this);
         swHideMain.setOnClickListener(this);
 
         findViewById(R.id.bt_setup_now).setOnClickListener(this);
@@ -89,82 +83,60 @@ public class SettingActivity extends Activity implements View.OnClickListener {
     @SuppressLint("NonConstantResourceId")
     @Override
     public void onClick(View view) {
-        switch (view.getId()) {
-            // 选择源
-            case R.id.ll_source:
-                startActivity(new Intent(this, SourceListActivity.class));
-                break;
+        int id = view.getId();
+        if (id == R.id.ll_time) {
             // 设置定时任务
-            case R.id.ll_time:
-                startActivity(new Intent(this, TimeListActivity.class));
-                break;
-            // 保存到手机
-            case R.id.sw_save:
-                reqPermissionAndSave();
-                break;
+            startActivity(new Intent(this, TimeListActivity.class));
+        } else if (id == R.id.sw_save) {
+            // 保存到相册
+            reqPermissionAndSave();
+        } else if (id == R.id.sw_lock_screen) {
             // 同时设置锁屏
-            case R.id.sw_lock_screen:
-                savePreference(Constants.Default.KEY_LOCK_SCREEN, swLockScreen.isChecked());
-                refreshSubText();
-                break;
-            case R.id.sw_show_toast:
-                savePreference(Constants.Default.KEY_SHOW_TOAST, swShowToast.isChecked());
-                refreshSubText();
-                break;
-            case R.id.sw_only_wifi:
-                savePreference(Constants.Default.KEY_ONLY_WIFI, swOnlyWifi.isChecked());
-                refreshSubText();
-                break;
+            settingsStore.setLockScreen(swLockScreen.isChecked());
+            refreshSubText();
+        } else if (id == R.id.sw_show_toast) {
+            // 显示同步提示
+            settingsStore.showToast(swShowToast.isChecked());
+            refreshSubText();
+        } else if (id == R.id.sw_show_manual) {
             // 启用手动
-            case R.id.sw_show_manual:
-                ComponentUtil.setComponentEnable(this,
-                        new ComponentName(this, ManualSetActivity.class),
-                        swShowManual.isChecked());
-                savePreference(Constants.Default.KEY_SHOW_MANUAL_SYNC, swShowManual.isChecked());
-                refreshSubText();
-                break;
+            ComponentUtil.setComponentEnable(this,
+                    new ComponentName(this, ManualSetActivity.class),
+                    swShowManual.isChecked());
+            settingsStore.showManualEntry(swShowManual.isChecked());
+            refreshSubText();
+        } else if (id == R.id.sw_show_main) {
             // 启用主页
-            case R.id.sw_show_main:
-                ComponentUtil.setComponentEnable(this,
-                        new ComponentName(BuildConfig.APPLICATION_ID, "xyz.liut.bingwallpaper.MainActivity"),
-                        !swHideMain.isChecked());
-                savePreference(Constants.Default.KEY_HIDE_MAIN, swHideMain.isChecked());
-                refreshSubText();
-                break;
-
+            ComponentUtil.setComponentEnable(this,
+                    new ComponentName(BuildConfig.APPLICATION_ID, "xyz.liut.bingwallpaper.MainActivity"),
+                    !swHideMain.isChecked());
+            settingsStore.hideMainIcon(swHideMain.isChecked());
+            refreshSubText();
+        } else if (id == R.id.bt_setup_now) {
             // 立即设置
-            case R.id.bt_setup_now:
-                SyncWallpaperService.start(this);
-                finish();
-                break;
+            SyncWallpaperService.start(this);
+            finish();
+        } else if (id == R.id.bt_clear) {
             // 清空壁纸
-            case R.id.bt_clear:
-                WallpaperTool.clearWallpaper(this);
-                break;
+            WallpaperTool.clearWallpaper(this);
         }
     }
 
     @SuppressLint("SetTextI18n")
     private void loadData() {
-        // 壁纸源
-        SourceBean bean = SourceManager.getDefaultSource(this);
-        tvSource.setText(bean.getName() + "\n" + bean.getDesc());
-
         // 开关选项
-        boolean save = getPreference(Constants.Default.KEY_SAVE, false);
-        boolean lockScreen = getPreference(Constants.Default.KEY_LOCK_SCREEN, true);
-        boolean showToast = getPreference(Constants.Default.KEY_SHOW_TOAST, true);
-        boolean onlyWifi = getPreference(Constants.Default.KEY_ONLY_WIFI, false);
-        boolean showManual = getPreference(Constants.Default.KEY_SHOW_MANUAL_SYNC, false);
-        boolean hideMain = getPreference(Constants.Default.KEY_HIDE_MAIN, false);
+        boolean save = settingsStore.saveToGallery();
+        boolean lockScreen = settingsStore.setLockScreen();
+        boolean showToast = settingsStore.showToast();
+        boolean showManual = settingsStore.showManualEntry();
+        boolean hideMain = settingsStore.hideMainIcon();
         swSave.setChecked(save);
         swLockScreen.setChecked(lockScreen);
         swShowToast.setChecked(showToast);
-        swOnlyWifi.setChecked(onlyWifi);
         swShowManual.setChecked(showManual);
         swHideMain.setChecked(hideMain);
 
-        List<String> timedList = TimedListManager.loadTimedList(this);
+        List<String> timedList = settingsStore.timedList();
         if (timedList.size() == 0) {
             tvTime.setText(getString(R.string.no_timed));
         } else {
@@ -183,7 +155,7 @@ public class SettingActivity extends Activity implements View.OnClickListener {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
         } else {
-            savePreference(Constants.Default.KEY_SAVE, swSave.isChecked());
+            settingsStore.saveToGallery(swSave.isChecked());
             refreshSubText();
         }
     }
@@ -191,7 +163,7 @@ public class SettingActivity extends Activity implements View.OnClickListener {
     @SuppressLint("SetTextI18n")
     private void refreshSubText() {
         if (swSave.isChecked()) {
-            tvSave.setText("壁纸保存到: \n" + Constants.Config.WALLPAPER_SAVE_PATH);
+            tvSave.setText(R.string.save_to_gallery_desc);
         } else {
             tvSave.setText(R.string.no_save);
         }
@@ -206,12 +178,6 @@ public class SettingActivity extends Activity implements View.OnClickListener {
             tvShowToast.setText(R.string.show_toast_desc);
         } else {
             tvShowToast.setText(R.string.show_toast_desc2);
-        }
-
-        if (swOnlyWifi.isChecked()) {
-            tvOnlyWifi.setText(R.string.only_wifi_desc);
-        } else {
-            tvOnlyWifi.setText(R.string.only_wifi_desc2);
         }
 
         if (swShowManual.isChecked()) {
@@ -261,7 +227,7 @@ public class SettingActivity extends Activity implements View.OnClickListener {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            savePreference(Constants.Default.KEY_SAVE, swSave.isChecked());
+            settingsStore.saveToGallery(swSave.isChecked());
         } else {
             swSave.setChecked(false);
             ToastUtil.showToast(this, "请授予必要权限");
@@ -271,31 +237,22 @@ public class SettingActivity extends Activity implements View.OnClickListener {
     }
 
 
-    private void savePreference(String key, boolean value) {
-        spTool.save(key, value);
-    }
-
-    private boolean getPreference(String key, boolean def) {
-        return spTool.get(key, def);
-    }
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.setting_menu, menu);
         return true;
     }
 
-    @SuppressWarnings("SwitchStatementWithTooFewBranches")
     @SuppressLint("NonConstantResourceId")
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.menu_about:
-                startActivity(new Intent(this, AboutActivity.class));
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
+        int id = item.getItemId();
+        if (id == R.id.menu_about) {
+            // 打开关于页面
+            startActivity(new Intent(this, AboutActivity.class));
+            return true;
         }
+        return super.onOptionsItemSelected(item);
     }
 
 }

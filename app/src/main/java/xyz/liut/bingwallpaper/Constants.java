@@ -1,9 +1,5 @@
 package xyz.liut.bingwallpaper;
 
-import android.os.Environment;
-
-import java.io.File;
-
 /**
  * 常量值
  * <p>
@@ -33,6 +29,11 @@ public interface Constants {
         String KEY_SAVE = "KEY_SAVE";
 
         /**
+         * 保存到系统相册 KEY。
+         */
+        String KEY_SAVE_TO_GALLERY = "KEY_SAVE_TO_GALLERY";
+
+        /**
          * 同时设置锁屏 KEY
          */
         String KEY_LOCK_SCREEN = "KEY_LOCK_SCREEN";
@@ -41,11 +42,6 @@ public interface Constants {
          * 显示土司 KEY
          */
         String KEY_SHOW_TOAST = "KEY_SHOW_TOAST";
-
-        /**
-         * 仅wifi KEY
-         */
-        String KEY_ONLY_WIFI = "KEY_ONLY_WIFI";
 
         /**
          * 显示手动 KEY
@@ -62,10 +58,9 @@ public interface Constants {
     interface Config {
 
         /**
-         * 文件保存路径
+         * 使用 MediaStore 保存到公共图片库时的相对目录。
          */
-        String WALLPAPER_SAVE_PATH = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + File.separator + "wallpaper" + File.separator;
-
+        String MEDIASTORE_RELATIVE_PATH = "Pictures/BingWallpaper";
 
         /**
          * 通知通道ID和名称
@@ -75,4 +70,3 @@ public interface Constants {
     }
 
 }
-

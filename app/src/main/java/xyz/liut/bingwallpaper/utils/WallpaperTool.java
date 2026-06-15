@@ -6,7 +6,6 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
-import android.os.Build;
 import android.util.Log;
 
 import java.io.File;
@@ -114,7 +113,7 @@ public class WallpaperTool {
      */
     private static void setWallpaper(WallpaperManager wallpaperManager, boolean lockScreen, File file, int width, int height) throws IOException {
         FileInputStream is = new FileInputStream(file);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && lockScreen) {
+        if (lockScreen) {
             int result = wallpaperManager.setStream(
                     is,
                     new Rect(0, 0, width, height),
@@ -134,7 +133,7 @@ public class WallpaperTool {
      * @param bitmap 壁纸
      */
     private static void setWallpaper(WallpaperManager wallpaperManager, boolean lockScreen, Bitmap bitmap) throws IOException {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && lockScreen) {
+        if (lockScreen) {
             int result = wallpaperManager.setBitmap(bitmap, new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight()), true, WallpaperManager.FLAG_LOCK | WallpaperManager.FLAG_SYSTEM);
             Log.d(TAG, "setWallpaper: " + result);
         } else {

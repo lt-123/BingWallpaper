@@ -17,25 +17,6 @@
             android:orientation="vertical">
 
             <LinearLayout
-                android:id="@+id/ll_source"
-                style="@style/SettingItem"
-                android:orientation="vertical">
-
-                <TextView
-                    style="@style/SettingItemTitle"
-                    android:text="@string/wallpaper_source" />
-
-                <TextView
-                    android:id="@+id/tv_source"
-                    style="@style/SettingItemSubTitle"
-                    android:text="@string/bing_search" />
-
-            </LinearLayout>
-
-            <View style="@style/SettingItemLine" />
-
-
-            <LinearLayout
                 android:id="@+id/ll_time"
                 style="@style/SettingItem"
                 android:orientation="vertical">
@@ -148,38 +129,6 @@
             </LinearLayout>
 
             <View style="@style/SettingItemLine" />
-
-            <LinearLayout
-                android:id="@+id/ll_only_wifi"
-                style="@style/SettingItem"
-                android:orientation="horizontal">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        style="@style/SettingItemTitle"
-                        android:text="@string/only_wifi" />
-
-                    <TextView
-                        android:id="@+id/tv_only_wifi"
-                        style="@style/SettingItemSubTitle"
-                        android:text="@string/only_wifi_desc" />
-                </LinearLayout>
-
-                <Switch
-                    android:id="@+id/sw_only_wifi"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center" />
-
-            </LinearLayout>
-
-            <View style="@style/SettingItemLine" />
-
 
             <LinearLayout
                 android:id="@+id/ll_show_manual"

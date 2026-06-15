@@ -38,7 +38,6 @@ public class AdjustBitmap {
 
             return decodeSampledBitmapFromFile(file, reqWidth, reqHeight, options.outWidth, options.outHeight);
         } catch (Exception e) {
-            e.printStackTrace();
             return null;
         }
     }
