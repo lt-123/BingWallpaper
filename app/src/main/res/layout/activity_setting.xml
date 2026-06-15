@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:orientation="vertical"
     tools:context=".SettingActivity">
 
@@ -29,6 +30,60 @@
                     android:id="@+id/tv_time"
                     style="@style/SettingItemSubTitle"
                     android:text="@string/every_day" />
+
+            </LinearLayout>
+
+            <View style="@style/SettingItemLine" />
+
+            <LinearLayout
+                android:id="@+id/ll_bing_market"
+                style="@style/SettingItem"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/SettingItemTitle"
+                    android:text="@string/bing_market" />
+
+                <TextView
+                    android:id="@+id/tv_bing_market"
+                    style="@style/SettingItemSubTitle"
+                    android:text="@string/bing_market_default" />
+
+            </LinearLayout>
+
+            <View style="@style/SettingItemLine" />
+
+            <LinearLayout
+                android:id="@+id/ll_bing_resolution"
+                style="@style/SettingItem"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/SettingItemTitle"
+                    android:text="@string/bing_resolution" />
+
+                <TextView
+                    android:id="@+id/tv_bing_resolution"
+                    style="@style/SettingItemSubTitle"
+                    android:text="@string/bing_resolution_uhd" />
+
+            </LinearLayout>
+
+            <View style="@style/SettingItemLine" />
+
+            <LinearLayout
+                android:id="@+id/ll_wallpaper_fit_mode"
+                style="@style/SettingItem"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/SettingItemTitle"
+                    android:text="@string/wallpaper_fit_mode" />
+
+                <TextView
+                    android:id="@+id/tv_wallpaper_fit_mode"
+                    style="@style/SettingItemSubTitle"
+                    android:text="@string/wallpaper_fit_mode_system" />
 
             </LinearLayout>
 

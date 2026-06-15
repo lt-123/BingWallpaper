@@ -11,6 +11,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
+import android.net.Uri;
+
+import xyz.liut.bingwallpaper.v3.network.HttpDownloader;
+
 /**
  * Bing 壁纸来源。
  * <p>
@@ -30,12 +34,38 @@ public class BingWallpaperSource implements WallpaperSource {
 
     private final TextFetcher textFetcher;
     private final String resolution;
+    private final BingSourceOptions options;
 
     /**
      * 创建使用默认网络请求和默认分辨率的 Bing 来源。
      */
     public BingWallpaperSource() {
-        this(new UrlConnectionTextFetcher(), DEFAULT_RESOLUTION);
+        this(new HttpDownloader(), DEFAULT_RESOLUTION, BingSourceOptions.defaults());
+    }
+
+    /**
+     * 创建使用共享下载器和指定分辨率的 Bing 来源。
+     *
+     * @param downloader 共享 HTTP 下载器
+     * @param resolution 图片分辨率后缀
+     */
+    public BingWallpaperSource(HttpDownloader downloader, String resolution) {
+        this(downloader, resolution, BingSourceOptions.defaults());
+    }
+
+    /**
+     * 创建使用共享下载器、指定分辨率和 Bing 源配置的 Bing 来源。
+     *
+     * @param downloader 共享 HTTP 下载器
+     * @param resolution 图片分辨率后缀
+     * @param options    Bing 源配置
+     */
+    public BingWallpaperSource(HttpDownloader downloader, String resolution, BingSourceOptions options) {
+        this(new DownloaderTextFetcher(downloader), resolution, options);
+    }
+
+    public BingWallpaperSource(HttpDownloader downloader, BingSourceOptions options) {
+        this(new DownloaderTextFetcher(downloader), options);
     }
 
     /**
@@ -44,7 +74,7 @@ public class BingWallpaperSource implements WallpaperSource {
      * @param textFetcher 文本获取器
      */
     public BingWallpaperSource(TextFetcher textFetcher) {
-        this(textFetcher, DEFAULT_RESOLUTION);
+        this(textFetcher, DEFAULT_RESOLUTION, BingSourceOptions.defaults());
     }
 
     /**
@@ -54,13 +84,31 @@ public class BingWallpaperSource implements WallpaperSource {
      * @param resolution  图片分辨率后缀
      */
     public BingWallpaperSource(TextFetcher textFetcher, String resolution) {
+        this(textFetcher, resolution, BingSourceOptions.defaults());
+    }
+
+    /**
+     * 创建 Bing 来源。
+     *
+     * @param textFetcher 文本获取器
+     * @param resolution  图片分辨率后缀
+     * @param options     Bing 源配置
+     */
+    public BingWallpaperSource(TextFetcher textFetcher, String resolution, BingSourceOptions options) {
         this.textFetcher = textFetcher;
-        this.resolution = resolution;
+        this.resolution = BingSourceOptions.normalizeResolution(resolution);
+        this.options = options == null ? BingSourceOptions.defaults() : options;
+    }
+
+    public BingWallpaperSource(TextFetcher textFetcher, BingSourceOptions options) {
+        this(textFetcher,
+                options == null ? BingSourceOptions.RESOLUTION_UHD : options.getResolution(),
+                options);
     }
 
     @Override
     public WallpaperInfo fetch() throws Exception {
-        return parseJson(textFetcher.get(API_URL), resolution);
+        return parseJson(textFetcher.get(buildApiUrl(options.getMarket())), resolution, options.getImageHost());
     }
 
     @Override
@@ -77,17 +125,52 @@ public class BingWallpaperSource implements WallpaperSource {
      * @throws Exception JSON 格式不符合预期时抛出
      */
     public static WallpaperInfo parseJson(String json, String resolution) throws Exception {
+        return parseJson(json, resolution, BingSourceOptions.HOST_GLOBAL);
+    }
+
+    /**
+     * 解析 Bing API JSON。
+     *
+     * @param json       Bing API 返回的 JSON 文本
+     * @param resolution 图片分辨率后缀，例如 UHD
+     * @param imageHost  图片 URL 使用的 Bing 域名
+     * @return 壁纸信息
+     * @throws Exception JSON 格式不符合预期时抛出
+     */
+    public static WallpaperInfo parseJson(String json, String resolution, String imageHost) throws Exception {
         JSONObject image = new JSONObject(json)
                 .getJSONArray("images")
                 .getJSONObject(0);
 
         String urlbase = image.getString("urlbase");
-        String imageUrl = BING_HOST + urlbase + "_" + resolution + ".jpg";
+        String imageUrl = "https://" + sanitizeImageHost(imageHost)
+                + urlbase + "_" + resolution + ".jpg";
         String fileName = fileNameFromUrlbase(urlbase, resolution);
         String title = image.optString("title");
         String description = image.optString("copyright");
 
         return new WallpaperInfo(imageUrl, fileName, title, description);
+    }
+
+    private static String sanitizeImageHost(String imageHost) {
+        if (BingSourceOptions.HOST_CHINA.equals(imageHost)) {
+            return BingSourceOptions.HOST_CHINA;
+        }
+        return BingSourceOptions.HOST_GLOBAL;
+    }
+
+    static String buildApiUrl(String market) {
+        Uri.Builder builder = new Uri.Builder()
+                .scheme("https")
+                .authority("www.bing.com")
+                .path("HPImageArchive.aspx")
+                .appendQueryParameter("format", "js")
+                .appendQueryParameter("n", "1");
+        String normalizedMarket = BingSourceOptions.normalizeMarket(market);
+        if (!normalizedMarket.isEmpty()) {
+            builder.appendQueryParameter("mkt", normalizedMarket);
+        }
+        return builder.build().toString();
     }
 
     private static String fileNameFromUrlbase(String urlbase, String resolution) {
@@ -129,6 +212,20 @@ public class BingWallpaperSource implements WallpaperSource {
          * @throws Exception 请求失败时抛出
          */
         String get(String url) throws Exception;
+    }
+
+    static class DownloaderTextFetcher implements TextFetcher {
+
+        private final HttpDownloader downloader;
+
+        DownloaderTextFetcher(HttpDownloader downloader) {
+            this.downloader = downloader;
+        }
+
+        @Override
+        public String get(String url) throws Exception {
+            return downloader.get(url);
+        }
     }
 
     interface ConnectionFactory {

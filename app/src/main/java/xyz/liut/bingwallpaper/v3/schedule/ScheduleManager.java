@@ -7,6 +7,7 @@ import android.content.Context;
 import android.util.Log;
 
 import java.util.Calendar;
+import java.util.ArrayList;
 import java.util.List;
 
 import xyz.liut.bingwallpaper.AlarmJob;
@@ -96,6 +97,28 @@ public class ScheduleManager {
     }
 
     /**
+     * 重新安排每日同步任务。
+     * <p>
+     * 只取消本应用每日任务保留区间内的 JobId，避免误删失败重试或其它后台任务。
+     *
+     * @param times 每项为 int[]{hour, minute}
+     * @return 全部任务均调度成功时返回 true
+     */
+    public boolean rescheduleDaily(List<int[]> times) {
+        cancelDaily();
+        return scheduleDaily(times);
+    }
+
+    /**
+     * 取消所有每日同步任务。
+     */
+    public void cancelDaily() {
+        for (int minuteOfDay = 0; minuteOfDay < 24 * 60; minuteOfDay++) {
+            scheduler.cancel(DAILY_JOB_ID_BASE + minuteOfDay);
+        }
+    }
+
+    /**
      * 按指定 HH:mm 安排每日同步任务。
      *
      * @param hour        目标小时
@@ -141,13 +164,7 @@ public class ScheduleManager {
 
     private boolean scheduleDelay(int jobId, long minLatencyMinutes, long maxExecutionDelayMinutes) {
         ComponentName componentName = new ComponentName(context, AlarmJob.class.getName());
-        JobInfo.Builder builder = new JobInfo.Builder(jobId, componentName);
-        builder.setPrefetch(true);
-        JobInfo jobInfo = builder
-                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                .setMinimumLatency(minLatencyMinutes * MINUTE_MILLIS)
-                .setOverrideDeadline(maxExecutionDelayMinutes * MINUTE_MILLIS)
-                .build();
+        JobInfo jobInfo = createJobInfo(componentName, jobId, minLatencyMinutes, maxExecutionDelayMinutes);
 
         Log.d(TAG, "jobInfo minLatencyMinutes=" + jobInfo.getMinLatencyMillis() / MINUTE_MILLIS);
         int scheduleResult = scheduler.schedule(jobInfo);
@@ -156,8 +173,60 @@ public class ScheduleManager {
         return success;
     }
 
+    private static JobInfo createJobInfo(ComponentName componentName, int jobId,
+                                         long minLatencyMinutes, long maxExecutionDelayMinutes) {
+        JobInfo.Builder builder = new JobInfo.Builder(jobId, componentName);
+        builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
+        builder.setMinimumLatency(minLatencyMinutes * MINUTE_MILLIS);
+        builder.setOverrideDeadline(maxExecutionDelayMinutes * MINUTE_MILLIS);
+        return builder.build();
+    }
+
     private static int dailyJobId(int hour, int minute) {
         return DAILY_JOB_ID_BASE + hour * 60 + minute;
+    }
+
+    /**
+     * 将用户配置的 HH:mm 字符串解析为定时任务参数。
+     * <p>
+     * 单条配置非法时跳过该条，避免一个坏数据影响其它有效时间点。
+     *
+     * @param timedList 用户配置的时间列表
+     * @return 可调度的 hour/minute 列表
+     */
+    public static List<int[]> parseTimedJobs(List<String> timedList) {
+        List<int[]> jobs = new ArrayList<>();
+        if (timedList == null) {
+            return jobs;
+        }
+        for (String timed : timedList) {
+            if (timed == null) {
+                continue;
+            }
+            try {
+                String[] times = timed.split(":");
+                if (times.length != 2) {
+                    continue;
+                }
+                int hour = Integer.parseInt(times[0]);
+                int minute = Integer.parseInt(times[1]);
+                validateTime(hour, minute);
+                jobs.add(new int[]{hour, minute});
+            } catch (RuntimeException e) {
+                Log.w(TAG, "invalid timed job: " + timed, e);
+            }
+        }
+        return jobs;
+    }
+
+    static int dailyJobIdForTest(int hour, int minute) {
+        validateTime(hour, minute);
+        return dailyJobId(hour, minute);
+    }
+
+    static JobInfo createJobInfoForTest(ComponentName componentName, int jobId,
+                                        long minLatencyMinutes, long maxExecutionDelayMinutes) {
+        return createJobInfo(componentName, jobId, minLatencyMinutes, maxExecutionDelayMinutes);
     }
 
     static void validateScheduleOptions(int hour, int minute, int delayMinute) {

@@ -10,13 +10,13 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import xyz.liut.bingwallpaper.utils.ToastUtil;
 import xyz.liut.bingwallpaper.v3.network.HttpDownloader;
 import xyz.liut.bingwallpaper.v3.schedule.ScheduleManager;
 import xyz.liut.bingwallpaper.v3.settings.SettingsStore;
+import xyz.liut.bingwallpaper.v3.source.BingSourceOptions;
 import xyz.liut.bingwallpaper.v3.source.BingWallpaperSource;
 import xyz.liut.bingwallpaper.v3.storage.WallpaperStore;
 import xyz.liut.bingwallpaper.v3.sync.SyncResult;
@@ -50,9 +50,10 @@ public class SyncWallpaperService extends Service {
 
         settingsStore = new SettingsStore(this);
         HttpDownloader httpDownloader = new HttpDownloader();
-        wallpaperSource = new BingWallpaperSource();
+        BingSourceOptions sourceOptions = settingsStore.bingSourceOptions();
+        wallpaperSource = new BingWallpaperSource(httpDownloader, sourceOptions);
         WallpaperStore wallpaperStore = new WallpaperStore(this);
-        WallpaperSetter wallpaperSetter = new WallpaperSetter(this);
+        WallpaperSetter wallpaperSetter = new WallpaperSetter(this, settingsStore.wallpaperFitMode());
         scheduleManager = new ScheduleManager(this);
         syncUseCase = new WallpaperSyncUseCase(
                 wallpaperSource,
@@ -125,8 +126,8 @@ public class SyncWallpaperService extends Service {
      * 根据用户配置重新安排每日定时同步任务。
      */
     private void scheduleConfiguredJobs() {
-        List<int[]> timedJobs = parseTimedJobs(settingsStore.timedList());
-        if (!scheduleManager.scheduleDaily(timedJobs)) {
+        List<int[]> timedJobs = ScheduleManager.parseTimedJobs(settingsStore.timedList());
+        if (!scheduleManager.rescheduleDaily(timedJobs)) {
             showMsg("不支持自动同步壁纸");
         }
     }
@@ -138,22 +139,6 @@ public class SyncWallpaperService extends Service {
         if (!scheduleManager.scheduleRetry()) {
             showMsg("不支持自动同步壁纸");
         }
-    }
-
-    private List<int[]> parseTimedJobs(List<String> timedList) {
-        List<int[]> jobs = new ArrayList<>();
-        for (String timed : timedList) {
-            try {
-                // 用户配置格式为 HH:mm，解析失败时跳过单个异常配置，不影响其他定时任务。
-                String[] times = timed.split(":");
-                int hour = Integer.parseInt(times[0]);
-                int minute = Integer.parseInt(times[1]);
-                jobs.add(new int[]{hour, minute});
-            } catch (RuntimeException e) {
-                Log.w(TAG, "invalid timed job: " + timed, e);
-            }
-        }
-        return jobs;
     }
 
     /**

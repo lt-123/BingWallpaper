@@ -43,6 +43,33 @@
     <string name="complete_ignore_battery">已完成忽略电池优化</string>
     <string name="no_timed">无定时任务</string>
 
+    <string name="bing_market">必应地区</string>
+    <string name="bing_market_default">跟随默认</string>
+    <string name="bing_market_china">中国 zh-CN</string>
+    <string name="bing_market_global">国际版 en-WW</string>
+    <string name="bing_market_us">美国 en-US</string>
+    <string name="bing_market_uk">英国 en-GB</string>
+    <string name="bing_market_japan">日本 ja-JP</string>
+    <string name="bing_market_custom">自定义...</string>
+    <string name="bing_market_custom_value">自定义 %1$s</string>
+    <string name="bing_market_custom_title">自定义必应地区</string>
+    <string name="bing_market_custom_hint">例如 en-WW</string>
+    <string name="bing_market_invalid">地区代码格式不正确</string>
+
+    <string name="bing_resolution">图片分辨率</string>
+    <string name="bing_resolution_uhd">UHD</string>
+    <string name="bing_resolution_1920_1080">1920x1080</string>
+    <string name="bing_resolution_1920_1200">1920x1200</string>
+    <string name="bing_resolution_1366_768">1366x768</string>
+    <string name="bing_resolution_1080_1920">1080x1920</string>
+    <string name="bing_resolution_768_1366">768x1366</string>
+
+    <string name="wallpaper_fit_mode">装配模式</string>
+    <string name="wallpaper_fit_mode_system">系统默认</string>
+    <string name="wallpaper_fit_mode_crop">裁剪填满</string>
+    <string name="wallpaper_fit_mode_contain">完整显示</string>
+    <string name="wallpaper_fit_mode_stretch">拉伸填满</string>
+
     <string name="show_toast">显示Toast</string>
     <string name="show_toast_desc">设置壁纸进度会有Toast提示</string>
     <string name="show_toast_desc2">设置壁纸进度不会有Toast提示</string>

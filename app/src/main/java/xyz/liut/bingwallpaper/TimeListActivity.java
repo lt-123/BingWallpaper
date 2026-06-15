@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.TimePickerDialog;
-import android.app.job.JobScheduler;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -18,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import xyz.liut.bingwallpaper.utils.BatteryUtil;
+import xyz.liut.bingwallpaper.v3.schedule.ScheduleManager;
 
 /**
  * 定时任务列表
@@ -97,12 +97,7 @@ public class TimeListActivity extends Activity implements View.OnClickListener, 
             // 清空定时
             llTimedList.removeAllViews();
             TimedListManager.clear(this);
-
-            // 清空定时
-            JobScheduler scheduler = (JobScheduler) getApplication().getSystemService(JOB_SCHEDULER_SERVICE);
-            if (scheduler != null) {
-                scheduler.cancelAll();
-            }
+            new ScheduleManager(this).cancelDaily();
         } else if (id == R.id.bt_ignore_battery) {
             // 忽略电池优化
             new AlertDialog
@@ -136,7 +131,7 @@ public class TimeListActivity extends Activity implements View.OnClickListener, 
         addTime(builder.toString());
 
         // 添加定时
-        AlarmJob.setupTimed(this, hourOfDay, minute, 30);
+        new ScheduleManager(this).scheduleDaily(hourOfDay, minute, 30);
 
         saveTimed();
     }

@@ -9,6 +9,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import xyz.liut.bingwallpaper.BaseTestCase;
+import xyz.liut.bingwallpaper.v3.network.HttpDownloader;
 
 /**
  * Bing 壁纸来源测试。
@@ -30,6 +31,28 @@ public class BingWallpaperSourceTest extends BaseTestCase {
         Assert.assertEquals("OHR.Test_UHD.jpg", info.getFileName());
         Assert.assertEquals("测试标题", info.getTitle());
         Assert.assertEquals("测试描述", info.getDescription());
+    }
+
+    @Test
+    public void parseJsonUsesConfiguredImageHost() throws Exception {
+        WallpaperInfo info = BingWallpaperSource.parseJson(SAMPLE_JSON, "UHD", BingSourceOptions.HOST_CHINA);
+
+        Assert.assertEquals("https://cn.bing.com/th?id=OHR.Test_UHD.jpg", info.getImageUrl());
+        Assert.assertEquals("OHR.Test_UHD.jpg", info.getFileName());
+    }
+
+    @Test
+    public void buildApiUrlOmitsEmptyMarket() {
+        String apiUrl = BingWallpaperSource.buildApiUrl("");
+
+        Assert.assertEquals("https://www.bing.com/HPImageArchive.aspx?format=js&n=1", apiUrl);
+    }
+
+    @Test
+    public void buildApiUrlAddsConfiguredMarket() {
+        String apiUrl = BingWallpaperSource.buildApiUrl("en-WW");
+
+        Assert.assertEquals("https://www.bing.com/HPImageArchive.aspx?format=js&n=1&mkt=en-WW", apiUrl);
     }
 
     @Test
@@ -64,6 +87,49 @@ public class BingWallpaperSourceTest extends BaseTestCase {
         Assert.assertEquals("Bing", source.name());
         Assert.assertEquals("https://www.bing.com/th?id=OHR.Test_UHD.jpg", info.getImageUrl());
         Assert.assertEquals("OHR.Test_UHD.jpg", info.getFileName());
+    }
+
+    @Test
+    public void fetchCanUseSharedHttpDownloaderForApiText() throws Exception {
+        FakeHttpDownloader downloader = new FakeHttpDownloader(SAMPLE_JSON);
+        BingWallpaperSource source = new BingWallpaperSource(downloader, "UHD",
+                new BingSourceOptions(BingSourceOptions.MARKET_GLOBAL));
+
+        WallpaperInfo info = source.fetch();
+
+        Assert.assertEquals("https://www.bing.com/HPImageArchive.aspx?format=js&n=1&mkt=en-WW",
+                downloader.requestedUrl);
+        Assert.assertEquals("https://www.bing.com/th?id=OHR.Test_UHD.jpg", info.getImageUrl());
+        Assert.assertEquals("OHR.Test_UHD.jpg", info.getFileName());
+    }
+
+    @Test
+    public void fetchUsesChinaImageHostForChinaMarket() throws Exception {
+        FakeHttpDownloader downloader = new FakeHttpDownloader(SAMPLE_JSON);
+        BingWallpaperSource source = new BingWallpaperSource(downloader, "UHD",
+                new BingSourceOptions(BingSourceOptions.MARKET_CHINA));
+
+        WallpaperInfo info = source.fetch();
+
+        Assert.assertEquals("https://www.bing.com/HPImageArchive.aspx?format=js&n=1&mkt=zh-CN",
+                downloader.requestedUrl);
+        Assert.assertEquals("https://cn.bing.com/th?id=OHR.Test_UHD.jpg", info.getImageUrl());
+        Assert.assertEquals("OHR.Test_UHD.jpg", info.getFileName());
+    }
+
+    @Test
+    public void fetchUsesConfiguredResolutionFromOptions() throws Exception {
+        FakeHttpDownloader downloader = new FakeHttpDownloader(SAMPLE_JSON);
+        BingWallpaperSource source = new BingWallpaperSource(downloader,
+                new BingSourceOptions(BingSourceOptions.MARKET_GLOBAL,
+                        BingSourceOptions.RESOLUTION_1920_1080));
+
+        WallpaperInfo info = source.fetch();
+
+        Assert.assertEquals("https://www.bing.com/HPImageArchive.aspx?format=js&n=1&mkt=en-WW",
+                downloader.requestedUrl);
+        Assert.assertEquals("https://www.bing.com/th?id=OHR.Test_1920x1080.jpg", info.getImageUrl());
+        Assert.assertEquals("OHR.Test_1920x1080.jpg", info.getFileName());
     }
 
     @Test
@@ -130,6 +196,21 @@ public class BingWallpaperSourceTest extends BaseTestCase {
         @Override
         public InputStream getInputStream() {
             return new ByteArrayInputStream("{}".getBytes());
+        }
+    }
+
+    private static class FakeHttpDownloader extends HttpDownloader {
+        private final String response;
+        private String requestedUrl;
+
+        private FakeHttpDownloader(String response) {
+            this.response = response;
+        }
+
+        @Override
+        public String get(String url) {
+            requestedUrl = url;
+            return response;
         }
     }
 }

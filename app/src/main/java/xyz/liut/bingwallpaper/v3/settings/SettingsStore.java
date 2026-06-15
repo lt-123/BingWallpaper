@@ -8,6 +8,8 @@ import java.util.List;
 import xyz.liut.bingwallpaper.Constants;
 import xyz.liut.bingwallpaper.TimedListManager;
 import xyz.liut.bingwallpaper.utils.SpTool;
+import xyz.liut.bingwallpaper.v3.source.BingSourceOptions;
+import xyz.liut.bingwallpaper.v3.wallpaper.WallpaperFitMode;
 
 /**
  * v3 设置存储入口，统一封装 SharedPreferences 读写并复用旧版定时列表存储。
@@ -64,5 +66,38 @@ public class SettingsStore {
 
     public List<String> timedList() {
         return new ArrayList<>(TimedListManager.loadTimedList(appContext));
+    }
+
+    public String bingMarket() {
+        return BingSourceOptions.normalizeMarket(
+                spTool.get(Constants.Default.KEY_BING_MARKET, BingSourceOptions.MARKET_DEFAULT));
+    }
+
+    public void bingMarket(String market) {
+        spTool.save(Constants.Default.KEY_BING_MARKET, BingSourceOptions.normalizeMarket(market));
+    }
+
+    public String bingResolution() {
+        return BingSourceOptions.normalizeResolution(
+                spTool.get(Constants.Default.KEY_BING_RESOLUTION, BingSourceOptions.RESOLUTION_UHD));
+    }
+
+    public void bingResolution(String resolution) {
+        spTool.save(Constants.Default.KEY_BING_RESOLUTION,
+                BingSourceOptions.normalizeResolution(resolution));
+    }
+
+    public WallpaperFitMode wallpaperFitMode() {
+        return WallpaperFitMode.fromValue(
+                spTool.get(Constants.Default.KEY_WALLPAPER_FIT_MODE, WallpaperFitMode.SYSTEM.value()));
+    }
+
+    public void wallpaperFitMode(WallpaperFitMode mode) {
+        WallpaperFitMode fitMode = mode == null ? WallpaperFitMode.SYSTEM : mode;
+        spTool.save(Constants.Default.KEY_WALLPAPER_FIT_MODE, fitMode.value());
+    }
+
+    public BingSourceOptions bingSourceOptions() {
+        return new BingSourceOptions(bingMarket(), bingResolution());
     }
 }

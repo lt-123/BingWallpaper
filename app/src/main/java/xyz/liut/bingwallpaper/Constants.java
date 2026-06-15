@@ -52,6 +52,22 @@ public interface Constants {
          * 显示主图标 KEY
          */
         String KEY_HIDE_MAIN = "KEY_SHOW_MAIN";
+
+        /**
+         * Bing API 地区参数 KEY。
+         */
+        String KEY_BING_MARKET = "KEY_BING_MARKET";
+
+        /**
+         * Bing 图片分辨率 KEY。
+         */
+        String KEY_BING_RESOLUTION = "KEY_BING_RESOLUTION";
+
+        /**
+         * 壁纸装配模式 KEY。
+         */
+        String KEY_WALLPAPER_FIT_MODE = "KEY_WALLPAPER_FIT_MODE";
+
     }
 
 
