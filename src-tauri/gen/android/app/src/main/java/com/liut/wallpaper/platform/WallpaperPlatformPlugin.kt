@@ -195,7 +195,7 @@ fun saveToPictures(context: Context, fileName: String, mimeType: String, imageBy
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       put(
         MediaStore.Images.Media.RELATIVE_PATH,
-        "${Environment.DIRECTORY_PICTURES}/Wallpaper Client"
+        "${Environment.DIRECTORY_PICTURES}/Wallora"
       )
       put(MediaStore.Images.Media.IS_PENDING, 1)
     }

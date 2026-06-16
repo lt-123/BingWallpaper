@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Wallpaper Client Linux 用户级安装/卸载脚本
+# Wallora Linux 用户级安装/卸载脚本
 #
 # 设计目标：
 # - 使用用户级安装目录，不需要 sudo。
@@ -17,10 +17,10 @@
 
 set -Eeuo pipefail
 
-APP_NAME="Wallpaper Client"
+APP_NAME="Wallora"
 APP_ID="com.liut.wallpaper"
 SOURCE_BINARY_NAME="wallpaper-app"
-INSTALL_BINARY_NAME="wallpaper-client"
+INSTALL_BINARY_NAME="wallora"
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 

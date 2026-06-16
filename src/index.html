@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Wallpaper Client</title>
+    <title>Wallora</title>
+    <link rel="icon" href="data:," />
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
@@ -13,99 +14,197 @@
   </head>
   <body>
     <main class="app">
-      <section class="toolbar">
-        <div>
-          <h1>Wallpaper Client</h1>
-          <p id="status" role="status">Ready.</p>
+      <!-- App action/title bar -->
+      <section class="titlebar">
+        <div class="titlebar-leading">
+          <button
+            id="backHome"
+            type="button"
+            class="icon-button secondary"
+            aria-label="返回主页"
+            title="返回主页"
+            hidden
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
         </div>
-        <div class="actions">
-          <button id="manualUpdate" type="button">手动同步</button>
-          <button id="refreshGallery" type="button" class="secondary">
-            刷新画廊
+        <div class="titlebar-title">
+          <h1 id="pageTitle">Wallora</h1>
+        </div>
+        <div class="titlebar-actions">
+          <button
+            id="openSettings"
+            type="button"
+            class="icon-button secondary"
+            aria-label="设置"
+            title="设置"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1A2 2 0 1 1 4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1A2 2 0 1 1 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3h.1A1.7 1.7 0 0 0 10 3V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6h.1a1.7 1.7 0 0 0 1.9-.3l.1-.1A2 2 0 1 1 19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1A1.7 1.7 0 0 0 21 10h.1a2 2 0 1 1 0 4H21a1.7 1.7 0 0 0-1.6 1z"
+              />
+            </svg>
           </button>
         </div>
       </section>
 
-      <section class="workspace">
+      <!-- Home view: preview, actions, and paged gallery -->
+      <section id="homeView" class="view workspace">
+        <p id="status" class="status-line" role="status">Ready.</p>
+
+        <article id="preview" class="preview" aria-live="polite"></article>
+
+        <section class="home-actions" aria-label="壁纸操作">
+          <button id="applySelected" type="button">应用选中壁纸</button>
+          <button id="clearWallpaper" type="button" class="contrast" hidden>
+            清除系统壁纸
+          </button>
+        </section>
+
+        <section class="gallery-section">
+          <div class="section-header">
+            <h2>往期画廊</h2>
+            <div class="gallery-actions">
+              <button id="refreshGallery" type="button" class="secondary">
+                刷新画廊
+              </button>
+              <button id="loadMoreGallery" type="button" class="secondary">
+                加载更多
+              </button>
+            </div>
+          </div>
+          <div id="gallery" class="gallery"></div>
+        </section>
+      </section>
+
+      <!-- Settings view: source, wallpaper, and schedule configuration -->
+      <section id="settingsView" class="view settings-view" hidden>
+        <p class="settings-intro">调整壁纸源、应用方式和自动更新。</p>
+
         <form id="settings" class="settings">
+          <!-- Bing source settings -->
           <fieldset>
             <legend>Bing 源</legend>
-            <label>
-              区域
-              <select id="market">
-                <option value="UnitedStates">United States</option>
-                <option value="China">中国</option>
-                <option value="Japan">日本</option>
-                <option value="UnitedKingdom">United Kingdom</option>
-                <option value="Germany">Germany</option>
-                <option value="France">France</option>
-              </select>
-            </label>
-            <label>
-              分辨率
-              <select id="resolution">
-                <option value="Uhd4k">UHD 4K</option>
-                <option value="Standard1920x1080">1920 x 1080</option>
-              </select>
-            </label>
-            <label>
-              画廊数量
-              <input id="count" type="number" min="1" max="8" step="1" />
-            </label>
+            <div class="settings-list">
+              <label class="setting-row">
+                <span class="setting-label">区域</span>
+                <select id="market">
+                  <option value="UnitedStates">United States</option>
+                  <option value="China">中国</option>
+                  <option value="Japan">日本</option>
+                  <option value="UnitedKingdom">United Kingdom</option>
+                  <option value="Germany">Germany</option>
+                  <option value="France">France</option>
+                </select>
+              </label>
+              <label class="setting-row">
+                <span class="setting-label">分辨率</span>
+                <select id="resolution">
+                  <option value="Uhd4k">UHD 4K</option>
+                  <option value="Standard1920x1080">1920 x 1080</option>
+                </select>
+              </label>
+            </div>
           </fieldset>
 
+          <!-- Wallpaper application settings -->
           <fieldset>
             <legend>壁纸设置</legend>
-            <label>
-              装配模式
-              <select id="fitMode">
-                <option value="Fill">填充</option>
-                <option value="Fit">适应</option>
-                <option value="Stretch">拉伸</option>
-                <option value="Center">居中</option>
-              </select>
-            </label>
-            <label>
-              <input id="saveToFileSystem" type="checkbox" role="switch" />
-              保存到系统图片目录
-            </label>
-            <label>
-              <input id="setLockScreen" type="checkbox" role="switch" />
-              同时设置锁屏壁纸
-            </label>
+            <div class="settings-list">
+              <label class="setting-row">
+                <span class="setting-label">装配模式</span>
+                <select id="fitMode">
+                  <option value="Fill">填充</option>
+                  <option value="Fit">适应</option>
+                  <option value="Stretch">拉伸</option>
+                  <option value="Center">居中</option>
+                </select>
+              </label>
+              <label class="setting-row">
+                <span class="setting-label">保存到系统图片目录</span>
+                <span class="setting-control">
+                  <input id="saveToFileSystem" type="checkbox" role="switch" />
+                </span>
+              </label>
+              <label class="setting-row">
+                <span class="setting-label">同时设置锁屏壁纸</span>
+                <span class="setting-control">
+                  <input id="setLockScreen" type="checkbox" role="switch" />
+                </span>
+              </label>
+            </div>
           </fieldset>
 
+          <!-- Schedule settings -->
           <fieldset>
             <legend>定时</legend>
-            <label>
-              <input id="scheduleEnabled" type="checkbox" role="switch" />
-              启用自动更新
-            </label>
-            <label>
-              间隔分钟
-              <input id="intervalMinutes" type="number" min="1" step="1" />
-            </label>
-            <label>
-              <input id="notifyBackground" type="checkbox" role="switch" />
-              后台更新时提示
-            </label>
+            <div class="settings-list">
+              <label class="setting-row">
+                <span class="setting-label">启用自动更新</span>
+                <span class="setting-control">
+                  <input id="scheduleEnabled" type="checkbox" role="switch" />
+                </span>
+              </label>
+              <label class="setting-row">
+                <span class="setting-label">间隔分钟</span>
+                <input id="intervalMinutes" type="number" min="1" step="1" />
+              </label>
+              <label class="setting-row">
+                <span class="setting-label">后台更新时提示</span>
+                <span class="setting-control">
+                  <input id="notifyBackground" type="checkbox" role="switch" />
+                </span>
+              </label>
+            </div>
           </fieldset>
 
-          <div class="settings-actions">
-            <button id="applySelected" type="button">应用选中壁纸</button>
-            <button id="clearWallpaper" type="button" class="contrast">
-              清除系统壁纸
-            </button>
-          </div>
+          <!-- About and app information -->
+          <fieldset>
+            <legend>关于</legend>
+            <div class="settings-list">
+              <button id="openAbout" type="button" class="setting-row nav-row">
+                <span class="setting-label">关于 Wallora</span>
+                <span class="setting-value">版本与项目信息 ›</span>
+              </button>
+            </div>
+          </fieldset>
         </form>
+      </section>
 
-        <section class="content">
-          <article id="preview" class="preview" aria-live="polite"></article>
+      <!-- About view: product identity and project notes -->
+      <section id="aboutView" class="view about-view" hidden>
+        <div class="about-panel">
+          <img
+            class="about-icon"
+            src="/assets/wallora-mark.svg"
+            alt=""
+            aria-hidden="true"
+          />
           <div>
-            <h2>往期画廊</h2>
-            <div id="gallery" class="gallery"></div>
+            <h2>Wallora</h2>
+            <p class="about-subtitle">壁境</p>
           </div>
-        </section>
+          <p>
+            一个轻量的跨平台壁纸客户端，用于浏览每日壁纸、应用选中图片，并按计划自动更新桌面或移动设备壁纸。
+          </p>
+          <dl class="about-meta">
+            <div>
+              <dt>版本</dt>
+              <dd>0.1.0</dd>
+            </div>
+            <div>
+              <dt>壁纸源</dt>
+              <dd>Bing 每日壁纸</dd>
+            </div>
+            <div>
+              <dt>技术栈</dt>
+              <dd>Tauri 2、Rust、Vanilla JavaScript</dd>
+            </div>
+          </dl>
+        </div>
       </section>
     </main>
   </body>

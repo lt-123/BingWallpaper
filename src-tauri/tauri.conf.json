@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Wallpaper Client",
+  "productName": "Wallora",
   "version": "0.1.0",
   "identifier": "com.liut.wallpaper",
   "build": {
@@ -10,7 +10,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "Wallpaper Client",
+        "title": "Wallora",
         "width": 1180,
         "height": 760
       }

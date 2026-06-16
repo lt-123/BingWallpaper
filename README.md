@@ -1,6 +1,6 @@
-# Wallpaper Client
+# Wallora
 
-A Tauri 2 wallpaper client with a vanilla JavaScript frontend, Rust shared logic, and an Android native wallpaper bridge.
+Wallora is a Tauri 2 wallpaper client with a vanilla JavaScript frontend, Rust shared logic, and an Android native wallpaper bridge.
 
 ## Documentation
 

@@ -25,7 +25,7 @@ pub fn setup_tray<R: Runtime>(app: &mut App<R>) -> tauri::Result<()> {
 
     let mut tray = TrayIconBuilder::new()
         .menu(&menu)
-        .tooltip("Wallpaper Client")
+        .tooltip("Wallora")
         .on_menu_event(|app, event| match event.id().as_ref() {
             SHOW_ID => show_main_window(app),
             UPDATE_NOW_ID => update_now_from_tray(app),

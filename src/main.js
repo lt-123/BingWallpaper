@@ -1,124 +1,241 @@
+import {
+  loadStoredConfig,
+  readConfigFromForm,
+  saveStoredConfig,
+  writeConfigToForm,
+} from "./configStore.js";
+import {
+  appendUniqueWallpapers,
+  BING_PAGE_SIZE,
+  createInitialPager,
+  nextPagerAfterLoad,
+} from "./galleryPager.js";
+
+// 在 Tauri 运行时中使用真实的 invoke，浏览器开发环境回退到 mockInvoke
 const invoke = window.__TAURI__?.core?.invoke ?? mockInvoke;
 
+// 应用全局可变状态，所有异步操作都读写此对象
 const state = {
-  config: null,
-  gallery: [],
-  selected: null,
+  config: null,    // AppConfig，从 localStorage 或 default_config 初始化
+  gallery: [],     // 当前已加载的壁纸列表
+  pager: null,     // 分页状态，null 表示尚未初始化
+  selected: null,  // 当前选中的壁纸，用于预览和应用
 };
 
+// DOM 元素缓存，由 bindElements 在 DOMContentLoaded 后填充
 const elements = {};
+
+// 开发模式占位图：内联 SVG 渐变风景，避免外部网络请求
+const MOCK_IMAGE_URL = `data:image/svg+xml,${encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="sky" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#4f8fb8"/>
+      <stop offset="0.55" stop-color="#d8b56d"/>
+      <stop offset="1" stop-color="#2f5d50"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <path d="M0 690 C240 540 420 650 620 510 C820 370 1040 560 1220 430 C1360 330 1480 390 1600 310 L1600 900 L0 900 Z" fill="#264e47" opacity="0.9"/>
+  <path d="M0 760 C260 650 520 720 760 610 C980 510 1200 650 1600 560 L1600 900 L0 900 Z" fill="#183933" opacity="0.9"/>
+</svg>
+`)}`;
 
 window.addEventListener("DOMContentLoaded", async () => {
   bindElements();
   bindEvents();
-  state.config = loadConfig() ?? (await invoke("default_config"));
-  syncFormFromConfig();
-  await loadGallery();
+  // 优先使用本地缓存配置，否则向 Rust 后端请求默认值
+  state.config = loadStoredConfig() ?? (await invoke("default_config"));
+  writeConfigToForm(elements, state.config);
+  await syncPlatformCapabilities();
+  syncViewFromHash();
+  await loadGallery({ reset: true });
   await syncSchedule();
 });
 
+// 将所有需要操作的 DOM 元素统一缓存到 elements 对象，避免重复查询
 function bindElements() {
   for (const id of [
+    "homeView",
+    "settingsView",
+    "aboutView",
     "market",
     "resolution",
-    "count",
     "fitMode",
     "scheduleEnabled",
     "intervalMinutes",
     "notifyBackground",
     "saveToFileSystem",
     "setLockScreen",
+    "pageTitle",
     "status",
     "preview",
     "gallery",
-    "manualUpdate",
     "refreshGallery",
+    "loadMoreGallery",
     "applySelected",
     "clearWallpaper",
+    "openSettings",
+    "openAbout",
+    "backHome",
   ]) {
     elements[id] = document.querySelector(`#${id}`);
   }
 }
 
 function bindEvents() {
+  // 使用 URL hash 驱动视图切换，hashchange 事件确保浏览器前进/后退按钮也生效
+  window.addEventListener("hashchange", syncViewFromHash);
+
   document.querySelector("#settings").addEventListener("change", () => {
+    // 在更新 state.config 之前保存 Bing 源参数快照，直接比较字段值而非 JSON 字符串
+    const prevMarket = state.config.bing.market;
+    const prevResolution = state.config.bing.resolution;
     syncConfigFromForm();
-    saveConfig();
-    syncSchedule();
-    loadGallery();
+    saveStoredConfig(state.config);
+    // 仅更新预览的 objectFit 样式，不重新下载图片
+    renderPreview();
+    void syncSchedule();
+
+    // 仅 Bing 源参数（market / resolution）变化时才重置并重载画廊
+    if (state.config.bing.market !== prevMarket || state.config.bing.resolution !== prevResolution) {
+      void loadGallery({ reset: true });
+    }
   });
-  elements.manualUpdate.addEventListener("click", manualUpdate);
-  elements.refreshGallery.addEventListener("click", loadGallery);
+
+  elements.refreshGallery.addEventListener("click", () => loadGallery({ reset: true }));
+  elements.loadMoreGallery.addEventListener("click", () =>
+    loadGallery({ reset: false }),
+  );
   elements.applySelected.addEventListener("click", applySelected);
   elements.clearWallpaper.addEventListener("click", clearWallpaper);
+  elements.openSettings.addEventListener("click", () => {
+    location.hash = "settings";
+  });
+  elements.openAbout.addEventListener("click", () => {
+    location.hash = "about";
+  });
+  // 返回逻辑：about → settings，其他所有页 → home
+  elements.backHome.addEventListener("click", () => {
+    location.hash = location.hash === "#about" ? "settings" : "";
+  });
 }
 
-function syncFormFromConfig() {
-  elements.market.value = state.config.bing.market;
-  elements.resolution.value = state.config.bing.resolution;
-  elements.count.value = state.config.bing.count;
-  elements.fitMode.value = state.config.fit_mode;
-  elements.scheduleEnabled.checked = state.config.schedule.enabled;
-  elements.intervalMinutes.value = state.config.schedule.interval_minutes;
-  elements.notifyBackground.checked =
-    state.config.schedule.notify_on_background_update;
-  elements.saveToFileSystem.checked = state.config.save_to_file_system;
-  elements.setLockScreen.checked = state.config.platform.set_lock_screen;
-}
-
+// 将表单当前值同步到 state.config，传入当前 config 以保留无 UI 控件的字段值
 function syncConfigFromForm() {
-  state.config = {
-    bing: {
-      market: elements.market.value,
-      resolution: elements.resolution.value,
-      count: Number(elements.count.value),
-    },
-    fit_mode: elements.fitMode.value,
-    schedule: {
-      enabled: elements.scheduleEnabled.checked,
-      interval_minutes: Number(elements.intervalMinutes.value),
-      notify_on_background_update: elements.notifyBackground.checked,
-    },
-    save_to_file_system: elements.saveToFileSystem.checked,
-    platform: {
-      set_lock_screen: elements.setLockScreen.checked,
-      notify_on_manual_update: true,
-    },
-  };
+  state.config = readConfigFromForm(elements, state.config);
 }
 
-async function loadGallery() {
-  syncConfigFromForm();
-  setStatus("Loading Bing gallery...");
+/**
+ * 根据 URL hash 切换可见视图，并同步标题栏控件的显隐状态。
+ * 视图层级：home（默认）/ settings / about
+ * 导航拓扑：home ←→ settings ←→ about
+ */
+function syncViewFromHash() {
+  const view = location.hash === "#settings"
+    ? "settings"
+    : location.hash === "#about"
+      ? "about"
+      : "home";
+
+  elements.homeView.hidden = view !== "home";
+  elements.settingsView.hidden = view !== "settings";
+  elements.aboutView.hidden = view !== "about";
+  elements.pageTitle.textContent = {
+    home: "Wallora",
+    settings: "设置",
+    about: "关于 Wallora",
+  }[view];
+  // home 视图不显示返回按钮和设置按钮
+  elements.backHome.hidden = view === "home";
+  elements.refreshGallery.hidden = view !== "home";
+  elements.openSettings.hidden = view !== "home";
+}
+
+/**
+ * 查询平台能力并据此显示/隐藏平台特有功能按钮。
+ * 当前仅 Android 支持"清除系统壁纸"，其他平台默认隐藏该按钮。
+ * 若 IPC 调用失败（例如插件尚未初始化），保守地隐藏按钮，不向用户展示错误。
+ */
+async function syncPlatformCapabilities() {
   try {
-    state.gallery = await invoke("fetch_bing_gallery", {
-      config: state.config.bing,
-      page: 0,
-    });
-    state.selected = state.gallery[0] ?? null;
-    renderGallery();
-    renderPreview();
-    setStatus(`Loaded ${state.gallery.length} wallpapers.`);
-  } catch (error) {
-    setStatus(error);
+    const capabilities = await invoke("platform_capabilities");
+    elements.clearWallpaper.hidden = !capabilities.can_clear_wallpaper;
+  } catch {
+    elements.clearWallpaper.hidden = true;
   }
 }
 
-async function manualUpdate({ scheduled = false } = {}) {
+/**
+ * 加载 Bing 壁纸画廊。
+ *
+ * reset=true：清空现有列表，从第 0 页重新拉取（刷新 / Bing 源参数变更时使用）。
+ * reset=false：从分页器的 nextIndex 继续拉取并追加，自动去重。
+ *
+ * 分页原理：Bing archive API 使用 idx（偏移量）参数，
+ * 每次固定拉取 BING_PAGE_SIZE 条；当返回数量 < BING_PAGE_SIZE 时认为已到末页。
+ *
+ * @param {{ reset: boolean }} options
+ */
+async function loadGallery({ reset }) {
   syncConfigFromForm();
-  setBusy(elements.manualUpdate, true);
-  setStatus("Updating wallpaper...");
+
+  if (reset || !state.pager) {
+    state.gallery = [];
+    state.pager = createInitialPager();
+    state.selected = null;
+  }
+
+  if (!state.pager.hasMore) {
+    setStatus("No more wallpapers to load.");
+    renderLoadMore();
+    return;
+  }
+
+  const page = state.pager.nextIndex;
+  // 强制覆盖 count，确保分页逻辑始终使用固定页大小
+  const config = { ...state.config.bing, count: BING_PAGE_SIZE };
+  setBusy(reset ? elements.refreshGallery : elements.loadMoreGallery, true);
+  setStatus(reset ? "Loading Bing gallery..." : "Loading more wallpapers...");
+
   try {
-    const config = configForUpdate(scheduled);
-    const result = await invoke("manual_update", { config });
-    setStatus(result.message);
+    const wallpapers = await invoke("fetch_bing_gallery", { config, page });
+
+    // reset 时不需要去重，直接使用原始列表；加载更多时才走去重合并逻辑
+    const merged = reset
+      ? { gallery: wallpapers, addedCount: wallpapers.length }
+      : appendUniqueWallpapers(state.gallery, wallpapers);
+
+    state.gallery = merged.gallery;
+    // 将"全为重复项"信号传入 nextPagerAfterLoad，由其决定 hasMore，保持 pager 对象不可变
+    state.pager = nextPagerAfterLoad(state.pager, wallpapers.length, {
+      allDuplicates: !reset && merged.addedCount === 0,
+    });
+
+    // reset 时默认选中第一张；加载更多时保持原来的选中项，若尚无选中则选第一张
+    state.selected = reset
+      ? state.gallery[0] ?? null
+      : state.selected ?? state.gallery[0] ?? null;
+
+    renderGallery();
+    renderPreview();
+    renderLoadMore();
+    setStatus(
+      reset
+        ? `Loaded ${state.gallery.length} wallpapers.`
+        : merged.addedCount > 0
+          ? `Loaded ${merged.addedCount} more wallpapers.`
+          : "No more wallpapers to load.",
+    );
   } catch (error) {
     setStatus(error);
   } finally {
-    setBusy(elements.manualUpdate, false);
+    setBusy(reset ? elements.refreshGallery : elements.loadMoreGallery, false);
+    renderLoadMore();
   }
 }
 
+// 应用当前选中壁纸，调用 Rust 后端下载并设置系统壁纸
 async function applySelected() {
   if (!state.selected) {
     setStatus("Select a gallery item first.");
@@ -140,6 +257,7 @@ async function applySelected() {
   }
 }
 
+// 清除系统壁纸（仅 Android 平台可用，桌面端此按钮默认隐藏）
 async function clearWallpaper() {
   setBusy(elements.clearWallpaper, true);
   try {
@@ -151,6 +269,10 @@ async function clearWallpaper() {
   }
 }
 
+/**
+ * 根据当前配置启用或取消自动更新计划。
+ * 桌面端使用 Rust 侧的线程调度器；Android 端通过 Kotlin WorkManager 实现。
+ */
 async function syncSchedule() {
   try {
     const status = state.config.schedule.enabled
@@ -162,55 +284,78 @@ async function syncSchedule() {
   }
 }
 
-function configForUpdate(scheduled) {
-  return {
-    ...state.config,
-    platform: {
-      ...state.config.platform,
-      notify_on_manual_update: scheduled
-        ? state.config.schedule.notify_on_background_update
-        : state.config.platform.notify_on_manual_update,
-    },
-  };
-}
-
+// 重建画廊 DOM。仅在列表内容变化时调用；选中状态变更通过直接更新 aria-pressed 处理。
 function renderGallery() {
   elements.gallery.replaceChildren();
   for (const wallpaper of state.gallery) {
     const card = document.createElement("button");
+    const image = document.createElement("img");
+    const title = document.createElement("span");
+
     card.type = "button";
     card.className = "gallery-item";
-    card.setAttribute("aria-pressed", wallpaper === state.selected);
-    card.innerHTML = `
-      <img src="${wallpaper.image_url}" alt="${wallpaper.title}" loading="lazy" />
-      <span>${wallpaper.title}</span>
-    `;
+    card.setAttribute("aria-pressed", String(wallpaper === state.selected));
+    image.src = wallpaper.image_url;
+    image.alt = wallpaper.title;
+    image.loading = "lazy";
+    title.textContent = wallpaper.title;
+
+    card.append(image, title);
     card.addEventListener("click", () => {
+      // 只切换两个卡片的 aria-pressed，焦点保持在被点击的卡片上，不重建 DOM
+      const prev = elements.gallery.querySelector('[aria-pressed="true"]');
+      if (prev) prev.setAttribute("aria-pressed", "false");
+      card.setAttribute("aria-pressed", "true");
       state.selected = wallpaper;
-      renderGallery();
       renderPreview();
     });
     elements.gallery.append(card);
   }
 }
 
+// 渲染壁纸预览区域。
+// 若展示的是同一张图片，只更新 objectFit，避免重建 DOM 打断正在进行中的图片加载。
 function renderPreview() {
   if (!state.selected) {
-    elements.preview.innerHTML = "<p>No wallpaper selected.</p>";
+    elements.preview.replaceChildren();
+    const empty = document.createElement("p");
+    empty.textContent = "No wallpaper selected.";
+    elements.preview.append(empty);
     return;
   }
-  elements.preview.innerHTML = `
-    <img src="${state.selected.image_url}" alt="${state.selected.title}" />
-    <div>
-      <h2>${state.selected.title}</h2>
-      <p>${state.selected.description}</p>
-      <small>${state.selected.published_date}</small>
-    </div>
-  `;
-  elements.preview.querySelector("img").style.objectFit =
-    fitModeToObjectFit(state.config.fit_mode);
+
+  const objectFit = fitModeToObjectFit(state.config.fit_mode);
+  const existingImg = elements.preview.querySelector("img");
+
+  // 同一张图片仅更新 objectFit，保留正在加载的网络请求
+  if (existingImg && existingImg.src === state.selected.image_url) {
+    existingImg.style.objectFit = objectFit;
+    return;
+  }
+
+  const image = document.createElement("img");
+  const details = document.createElement("div");
+  const title = document.createElement("h2");
+  const description = document.createElement("p");
+  const publishedDate = document.createElement("small");
+
+  image.src = state.selected.image_url;
+  image.alt = state.selected.title;
+  image.style.objectFit = objectFit;
+  title.textContent = state.selected.title;
+  description.textContent = state.selected.description;
+  publishedDate.textContent = state.selected.published_date;
+
+  details.append(title, description, publishedDate);
+  elements.preview.replaceChildren(image, details);
 }
 
+// 根据分页器状态控制"加载更多"按钮的可用性
+function renderLoadMore() {
+  elements.loadMoreGallery.disabled = !state.pager?.hasMore;
+}
+
+// 将 AppConfig 的 FitMode 枚举值映射为 CSS object-fit 属性值
 function fitModeToObjectFit(mode) {
   return {
     Fill: "cover",
@@ -220,15 +365,7 @@ function fitModeToObjectFit(mode) {
   }[mode];
 }
 
-function saveConfig() {
-  localStorage.setItem("wallpaper.config", JSON.stringify(state.config));
-}
-
-function loadConfig() {
-  const raw = localStorage.getItem("wallpaper.config");
-  return raw ? JSON.parse(raw) : null;
-}
-
+// 设置按钮的加载中状态（禁用 + aria-busy 属性）
 function setBusy(button, busy) {
   button.setAttribute("aria-busy", String(busy));
   button.disabled = busy;
@@ -238,7 +375,15 @@ function setStatus(message) {
   elements.status.textContent = String(message);
 }
 
-async function mockInvoke(command) {
+/**
+ * 浏览器开发模式下的 IPC 模拟层，模拟 Tauri invoke 的返回结构。
+ * 在非 Tauri 运行时（如直接用浏览器打开 index.html）时自动启用。
+ *
+ * fetch_bing_gallery 模拟行为：
+ * - 第 0 页返回 items 1-8，第 8 页返回 items 9-16
+ * - page >= 16 时回绕到 items 9-16（模拟 Bing 历史存档的有限深度）
+ */
+async function mockInvoke(command, args = {}) {
   if (command === "default_config") {
     return {
       bing: { market: "UnitedStates", resolution: "Uhd4k", count: 8 },
@@ -252,18 +397,26 @@ async function mockInvoke(command) {
       platform: { set_lock_screen: false, notify_on_manual_update: true },
     };
   }
+  if (command === "platform_capabilities") {
+    return { can_clear_wallpaper: false };
+  }
   if (command === "fetch_bing_gallery") {
-    return [
-      {
+    const page = Number(args.page ?? 0);
+    const count = Number(args.config?.count ?? BING_PAGE_SIZE);
+    const start = page >= 16 ? 8 : page;
+    const returnedCount = count;
+    return Array.from({ length: returnedCount }, (_, index) => {
+      const itemNumber = start + index + 1;
+      return {
         source_id: "bing",
-        source_wallpaper_id: "demo",
-        title: "Preview only",
+        source_wallpaper_id: `demo-${itemNumber}`,
+        title: `Preview ${itemNumber}`,
         description: "Run inside Tauri to load live Bing wallpapers.",
-        published_date: "20260615",
-        image_url: "https://www.bing.com/th?id=OHR.Example_EN-US1234567890_UHD.jpg",
+        published_date: `202606${String(16 - itemNumber).padStart(2, "0")}`,
+        image_url: MOCK_IMAGE_URL,
         detail_url: null,
-      },
-    ];
+      };
+    });
   }
   if (command === "configure_schedule") {
     return { enabled: true, message: "Automatic updates enabled." };

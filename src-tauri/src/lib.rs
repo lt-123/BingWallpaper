@@ -70,11 +70,30 @@ pub struct UpdateResult {
     pub message: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlatformCapabilities {
+    pub can_clear_wallpaper: bool,
+}
+
+/// 向前端返回默认应用配置，用于首次运行或 localStorage 无缓存时的初始化。
 #[tauri::command]
 fn default_config() -> AppConfig {
     AppConfig::default()
 }
 
+/// 返回当前平台支持的功能集合，前端根据此结果显示或隐藏对应按钮。
+/// 目前仅 Android 支持"清除系统壁纸"功能。
+#[tauri::command]
+fn platform_capabilities() -> PlatformCapabilities {
+    PlatformCapabilities {
+        can_clear_wallpaper: cfg!(target_os = "android"),
+    }
+}
+
+/// 拉取 Bing 壁纸存档列表。
+///
+/// `page` 对应 Bing API 的 `idx` 偏移参数（u8），每次返回至多 `config.count` 条。
+/// Bing 实际历史深度约 15 条，正常使用不会触及 u8 上限（255）。
 #[tauri::command]
 async fn fetch_bing_gallery(config: BingConfig, page: u8) -> Result<Vec<WallpaperItem>, String> {
     let request = BingSource::new(config.clone()).archive_request(page);
@@ -90,6 +109,12 @@ async fn fetch_bing_gallery(config: BingConfig, page: u8) -> Result<Vec<Wallpape
     Ok(response.into_wallpapers(config.resolution))
 }
 
+/// 手动触发壁纸更新的 IPC 命令。
+///
+/// 注意：前端当前已不直接调用此命令（JS 侧的 manualUpdate 函数已被移除，
+/// 用户通过"应用选中壁纸"流程代替）。系统托盘的"立即更新"使用
+/// `run_desktop_manual_update`，同样不经过此命令。
+/// 此命令应考虑从 invoke_handler 中移除，以缩小 WebView 可调用的 IPC 接口范围。
 #[tauri::command]
 async fn manual_update<R: Runtime>(
     app: AppHandle<R>,
@@ -310,14 +335,23 @@ async fn clear_system_wallpaper<R: Runtime>(app: AppHandle<R>) -> Result<String,
     clear_platform_wallpaper(app).await
 }
 
+/// 返回壁纸文件的保存目录（桌面端）。
+/// 优先使用系统图片目录（~/Pictures/Wallora），回退到下载目录。
+///
+/// 注意：目录名从"Wallpaper Client"更名为"Wallora"后，
+/// 旧版本已保存的壁纸文件不会自动迁移，需用户手动移动或清理。
 #[cfg(not(target_os = "android"))]
 fn wallpaper_directory() -> Result<PathBuf, String> {
     dirs::picture_dir()
         .or_else(dirs::download_dir)
-        .map(|dir| dir.join("Wallpaper Client"))
+        .map(|dir| dir.join("Wallora"))
         .ok_or_else(|| "Could not locate a Pictures or Downloads directory".to_string())
 }
 
+/// 设置桌面系统壁纸。
+/// KDE 环境优先使用 `plasma-apply-wallpaperimage` 命令以获得更好的兼容性；
+/// 其他桌面环境使用 `wallpaper` crate 的通用实现。
+/// `_fit_mode` 暂未被桌面路径使用（KDE 自行管理铺展模式），保留参数为未来扩展预留。
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 fn set_system_wallpaper(path: &PathBuf, _fit_mode: FitMode) -> Result<(), String> {
     if is_kde_desktop() && command_exists("plasma-apply-wallpaperimage") {
@@ -394,6 +428,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             default_config,
+            platform_capabilities,
             fetch_bing_gallery,
             manual_update,
             apply_wallpaper,
