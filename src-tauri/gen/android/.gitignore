@@ -14,7 +14,8 @@ build
 .cxx
 local.properties
 key.properties
-keystore.properties
+# keystore.properties 由项目明文托管（测试签名），不忽略
+# keystore.properties
 
 /.tauri
 /tauri.settings.gradle
