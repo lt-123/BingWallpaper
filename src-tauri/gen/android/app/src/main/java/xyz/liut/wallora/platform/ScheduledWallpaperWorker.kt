@@ -1,4 +1,4 @@
-package xyz.liut.wallpaper.platform
+package xyz.liut.wallora.platform
 
 import android.content.Context
 import androidx.work.CoroutineWorker

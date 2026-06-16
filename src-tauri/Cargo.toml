@@ -1,5 +1,5 @@
 [package]
-name = "wallpaper-app"
+name = "wallora"
 version = "0.1.0"
 description = "Cross-platform wallpaper client"
 authors = ["liut"]
@@ -11,14 +11,14 @@ edition = "2021"
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
-name = "wallpaper_lib"
+name = "wallora_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-wallpaper-core = { path = "../crates/wallpaper-core" }
+wallora-core = { path = "../crates/wallora-core" }
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }

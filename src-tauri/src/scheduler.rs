@@ -91,6 +91,7 @@ impl SchedulerState {
             .or_else(|_| self.set_status(false, "Automatic updates disabled".to_string()))
     }
 
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
     pub fn current_config(&self) -> Result<Option<AppConfig>, String> {
         self.config
             .lock()

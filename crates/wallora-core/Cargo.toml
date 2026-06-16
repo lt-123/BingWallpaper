@@ -1,10 +1,10 @@
 [package]
-name = "wallpaper-core"
+name = "wallora-core"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "wallpaper_core"
+name = "wallora_core"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

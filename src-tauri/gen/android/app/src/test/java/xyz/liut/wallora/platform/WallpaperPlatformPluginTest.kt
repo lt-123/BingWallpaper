@@ -1,4 +1,4 @@
-package xyz.liut.wallpaper.platform
+package xyz.liut.wallora.platform
 
 import android.app.WallpaperManager
 import org.junit.Assert.assertEquals
@@ -36,7 +36,7 @@ class WallpaperPlatformPluginTest {
 
   @Test
   fun scheduledWorkUsesStableUniqueName() {
-    assertEquals("wallpaper-client-schedule", SCHEDULE_WORK_NAME)
+    assertEquals("wallora-schedule", SCHEDULE_WORK_NAME)
   }
 
   @Test

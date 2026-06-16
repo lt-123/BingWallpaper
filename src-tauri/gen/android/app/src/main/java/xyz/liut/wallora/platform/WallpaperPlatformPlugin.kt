@@ -1,4 +1,4 @@
-package xyz.liut.wallpaper.platform
+package xyz.liut.wallora.platform
 
 import android.app.Activity
 import android.app.WallpaperManager
@@ -26,8 +26,8 @@ import androidx.work.WorkManager
 import java.io.ByteArrayInputStream
 import java.util.concurrent.TimeUnit
 
-const val SCHEDULE_WORK_NAME = "wallpaper-client-schedule"
-const val SCHEDULE_PREFS_NAME = "wallpaper-client-schedule"
+const val SCHEDULE_WORK_NAME = "wallora-schedule"
+const val SCHEDULE_PREFS_NAME = "wallora-schedule"
 const val PREF_CONFIG_JSON = "configJson"
 const val PREF_NOTIFY_BACKGROUND = "notifyBackground"
 const val MIN_PERIODIC_INTERVAL_MINUTES = 15L

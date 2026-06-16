@@ -22,10 +22,10 @@ val keystoreProperties = Properties().apply {
 
 android {
     compileSdk = 36
-    namespace = "xyz.liut.wallpaper"
+    namespace = "xyz.liut.wallora"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
-        applicationId = "xyz.liut.wallpaper"
+        applicationId = "xyz.liut.wallora"
         minSdk = 24
         targetSdk = 36
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
@@ -66,7 +66,8 @@ android {
             isEnable = true
             reset()
             include("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
-            isUniversalApk = false
+            // universal APK 保留以兼容 Tauri Rust 插件的 mergeUniversalDebugJniLibFolders 任务
+            isUniversalApk = true
         }
     }
     kotlinOptions {
@@ -94,3 +95,12 @@ dependencies {
 }
 
 apply(from = "tauri.build.gradle.kts")
+
+// tauri.build.gradle.kts 会设置 ndk.abiFilters，与 splits.abi 互斥，在此清除
+android {
+    defaultConfig {
+        ndk {
+            abiFilters.clear()
+        }
+    }
+}

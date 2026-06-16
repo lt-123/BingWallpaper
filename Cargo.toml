@@ -1,4 +1,4 @@
 [workspace]
-members = ["crates/wallpaper-core", "src-tauri"]
+members = ["crates/wallora-core", "src-tauri"]
 resolver = "2"
 

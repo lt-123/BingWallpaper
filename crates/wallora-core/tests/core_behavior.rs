@@ -1,7 +1,7 @@
-use wallpaper_core::bing::{
+use wallora_core::bing::{
     BingConfig, BingMarket, BingResolution, BingSource, BingWallpaperResponse,
 };
-use wallpaper_core::config::{FitMode, ScheduleConfig};
+use wallora_core::config::{FitMode, ScheduleConfig};
 
 #[test]
 fn bing_source_builds_archive_request_from_config() {

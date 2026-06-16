@@ -4450,20 +4450,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "wallpaper"
-version = "3.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0547c84bf49b1096b20ce49736b86cd27f8225fc426665d3fba19e71e44c4d46"
-dependencies = [
- "dirs 1.0.5",
- "enquote",
- "rust-ini",
- "winapi",
- "winreg 0.9.0",
-]
-
-[[package]]
-name = "wallpaper-app"
+name = "wallora"
 version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
@@ -4474,17 +4461,30 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",
+ "wallora-core",
  "wallpaper",
- "wallpaper-core",
 ]
 
 [[package]]
-name = "wallpaper-core"
+name = "wallora-core"
 version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
  "url",
+]
+
+[[package]]
+name = "wallpaper"
+version = "3.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0547c84bf49b1096b20ce49736b86cd27f8225fc426665d3fba19e71e44c4d46"
+dependencies = [
+ "dirs 1.0.5",
+ "enquote",
+ "rust-ini",
+ "winapi",
+ "winreg 0.9.0",
 ]
 
 [[package]]

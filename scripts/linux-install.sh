@@ -18,8 +18,8 @@
 set -Eeuo pipefail
 
 APP_NAME="Wallora"
-APP_ID="xyz.liut.wallpaper"
-SOURCE_BINARY_NAME="wallpaper-app"
+APP_ID="xyz.liut.wallora"
+SOURCE_BINARY_NAME="wallora"
 INSTALL_BINARY_NAME="wallora"
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

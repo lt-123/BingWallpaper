@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(target_os = "android")]
 use tauri::Manager;
 use tauri::{AppHandle, Runtime, State};
-use wallpaper_core::{
+use wallora_core::{
     bing::{BingConfig, BingSource, BingWallpaperResponse},
     config::{FitMode, ScheduleConfig},
     wallpaper::WallpaperItem,
@@ -417,14 +417,14 @@ pub fn run() {
         .manage(scheduler::SchedulerState::default())
         .plugin(platform::init())
         .plugin(tauri_plugin_opener::init())
-        .setup(|app| {
+        .setup(|_app| {
             #[cfg(not(any(target_os = "android", target_os = "ios")))]
-            tray::setup_tray(app)?;
+            tray::setup_tray(_app)?;
             Ok(())
         })
-        .on_window_event(|window, event| {
+        .on_window_event(|_window, _event| {
             #[cfg(not(any(target_os = "android", target_os = "ios")))]
-            tray::handle_window_event(window, event);
+            tray::handle_window_event(_window, _event);
         })
         .invoke_handler(tauri::generate_handler![
             default_config,

@@ -5,7 +5,7 @@ use serde::Serialize;
 use tauri::{plugin::TauriPlugin, Manager, Runtime};
 
 #[cfg(any(test, target_os = "android"))]
-use wallpaper_core::config::FitMode;
+use wallora_core::config::FitMode;
 
 #[cfg(target_os = "android")]
 use crate::AppConfig;
@@ -14,7 +14,7 @@ use crate::AppConfig;
 use tauri::plugin::PluginHandle;
 
 #[cfg(target_os = "android")]
-const PLUGIN_IDENTIFIER: &str = "xyz.liut.wallpaper.platform";
+const PLUGIN_IDENTIFIER: &str = "xyz.liut.wallora.platform";
 
 #[cfg(any(test, target_os = "android"))]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
