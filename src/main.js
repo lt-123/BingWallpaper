@@ -4,7 +4,6 @@ const state = {
   config: null,
   gallery: [],
   selected: null,
-  timerId: null,
 };
 
 const elements = {};
@@ -15,7 +14,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   state.config = loadConfig() ?? (await invoke("default_config"));
   syncFormFromConfig();
   await loadGallery();
-  restartSchedule();
+  await syncSchedule();
 });
 
 function bindElements() {
@@ -45,7 +44,7 @@ function bindEvents() {
   document.querySelector("#settings").addEventListener("change", () => {
     syncConfigFromForm();
     saveConfig();
-    restartSchedule();
+    syncSchedule();
     loadGallery();
   });
   elements.manualUpdate.addEventListener("click", manualUpdate);
@@ -152,20 +151,15 @@ async function clearWallpaper() {
   }
 }
 
-function restartSchedule() {
-  if (state.timerId) {
-    clearInterval(state.timerId);
-    state.timerId = null;
+async function syncSchedule() {
+  try {
+    const status = state.config.schedule.enabled
+      ? await invoke("configure_schedule", { config: state.config })
+      : await invoke("cancel_schedule");
+    setStatus(status.message);
+  } catch (error) {
+    setStatus(error);
   }
-  if (!state.config.schedule.enabled) return;
-
-  const intervalMs = Math.max(1, state.config.schedule.interval_minutes) * 60_000;
-  state.timerId = setInterval(() => {
-    manualUpdate({ scheduled: true });
-    if (state.config.schedule.notify_on_background_update) {
-      setStatus("Scheduled wallpaper update started.");
-    }
-  }, intervalMs);
 }
 
 function configForUpdate(scheduled) {
@@ -270,6 +264,12 @@ async function mockInvoke(command) {
         detail_url: null,
       },
     ];
+  }
+  if (command === "configure_schedule") {
+    return { enabled: true, message: "Automatic updates enabled." };
+  }
+  if (command === "cancel_schedule") {
+    return { enabled: false, message: "Automatic updates disabled." };
   }
   throw new Error("This action requires the Tauri runtime.");
 }

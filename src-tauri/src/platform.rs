@@ -3,6 +3,8 @@ use tauri::{plugin::TauriPlugin, Manager, Runtime};
 
 use wallpaper_core::config::FitMode;
 
+use crate::AppConfig;
+
 #[cfg(mobile)]
 use tauri::plugin::PluginHandle;
 
@@ -19,6 +21,27 @@ pub struct AndroidSaveWallpaperPayload {
     pub set_lock_screen: bool,
     pub save_to_gallery: bool,
     pub show_toast: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AndroidSchedulePayload {
+    pub enabled: bool,
+    pub interval_minutes: u32,
+    pub notify_on_background_update: bool,
+    pub config_json: String,
+}
+
+impl From<AppConfig> for AndroidSchedulePayload {
+    fn from(config: AppConfig) -> Self {
+        Self {
+            enabled: config.schedule.enabled,
+            interval_minutes: config.schedule.interval_minutes.max(1),
+            notify_on_background_update: config.schedule.notify_on_background_update,
+            config_json: serde_json::to_string(&config)
+                .expect("AppConfig serialization for Android schedule must not fail"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -57,11 +80,40 @@ impl<R: Runtime> PlatformWallpaper<R> {
             .map_err(|err| err.to_string())?;
         Ok(response.message)
     }
+
+    #[cfg(target_os = "android")]
+    pub async fn configure_android_schedule(
+        &self,
+        payload: AndroidSchedulePayload,
+    ) -> Result<String, String> {
+        let response: AndroidScheduleResponse = self
+            .mobile_plugin_handle
+            .run_mobile_plugin_async("configureSchedule", payload)
+            .await
+            .map_err(|err| err.to_string())?;
+        Ok(response.message)
+    }
+
+    #[cfg(target_os = "android")]
+    pub async fn cancel_android_schedule(&self) -> Result<String, String> {
+        let response: AndroidScheduleResponse = self
+            .mobile_plugin_handle
+            .run_mobile_plugin_async("cancelSchedule", serde_json::json!({}))
+            .await
+            .map_err(|err| err.to_string())?;
+        Ok(response.message)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AndroidClearWallpaperResponse {
+    pub message: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AndroidScheduleResponse {
     pub message: String,
 }
 

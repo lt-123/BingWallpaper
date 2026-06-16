@@ -1,11 +1,15 @@
 #[cfg(not(target_os = "android"))]
 use std::fs;
 use std::path::PathBuf;
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+use std::process::Command;
 
 #[cfg(target_os = "android")]
 use base64::{engine::general_purpose, Engine as _};
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Runtime};
+#[cfg(target_os = "android")]
+use tauri::Manager;
+use tauri::{AppHandle, Runtime, State};
 use wallpaper_core::{
     bing::{BingConfig, BingSource, BingWallpaperResponse},
     config::{FitMode, ScheduleConfig},
@@ -13,6 +17,9 @@ use wallpaper_core::{
 };
 
 mod platform;
+mod scheduler;
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+mod tray;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
@@ -88,6 +95,13 @@ async fn manual_update<R: Runtime>(
     app: AppHandle<R>,
     config: AppConfig,
 ) -> Result<UpdateResult, String> {
+    run_manual_update(app, config).await
+}
+
+pub(crate) async fn run_manual_update<R: Runtime>(
+    app: AppHandle<R>,
+    config: AppConfig,
+) -> Result<UpdateResult, String> {
     let wallpapers = fetch_bing_gallery(config.bing.clone(), 0).await?;
     let wallpaper = wallpapers
         .into_iter()
@@ -96,22 +110,122 @@ async fn manual_update<R: Runtime>(
     apply_wallpaper(app, wallpaper, config).await
 }
 
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+pub(crate) async fn run_desktop_manual_update(config: AppConfig) -> Result<UpdateResult, String> {
+    let wallpapers = fetch_bing_gallery(config.bing.clone(), 0).await?;
+    let wallpaper = wallpapers
+        .into_iter()
+        .next()
+        .ok_or_else(|| "Bing did not return any wallpapers".to_string())?;
+    let bytes = download_wallpaper_bytes(&wallpaper).await?;
+    apply_downloaded_wallpaper_desktop(wallpaper, config, bytes)
+}
+
+#[tauri::command]
+async fn configure_schedule<R: Runtime>(
+    app: AppHandle<R>,
+    config: AppConfig,
+    scheduler: State<'_, scheduler::SchedulerState>,
+) -> Result<scheduler::ScheduleStatus, String> {
+    configure_platform_schedule(app, config, scheduler).await
+}
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+async fn configure_platform_schedule<R: Runtime>(
+    _app: AppHandle<R>,
+    config: AppConfig,
+    scheduler: State<'_, scheduler::SchedulerState>,
+) -> Result<scheduler::ScheduleStatus, String> {
+    scheduler.configure_for_desktop(config)
+}
+
+#[cfg(target_os = "android")]
+async fn configure_platform_schedule<R: Runtime>(
+    app: AppHandle<R>,
+    config: AppConfig,
+    scheduler: State<'_, scheduler::SchedulerState>,
+) -> Result<scheduler::ScheduleStatus, String> {
+    let mut status = scheduler.configure(config.clone())?;
+    let native_message = app
+        .state::<platform::PlatformWallpaper<R>>()
+        .configure_android_schedule(platform::AndroidSchedulePayload::from(config))
+        .await?;
+    status.message = native_message;
+    Ok(status)
+}
+
+#[cfg(target_os = "ios")]
+async fn configure_platform_schedule<R: Runtime>(
+    _app: AppHandle<R>,
+    _config: AppConfig,
+    _scheduler: State<'_, scheduler::SchedulerState>,
+) -> Result<scheduler::ScheduleStatus, String> {
+    Err("Background scheduling is not available on iOS yet".to_string())
+}
+
+#[tauri::command]
+async fn cancel_schedule<R: Runtime>(
+    app: AppHandle<R>,
+    scheduler: State<'_, scheduler::SchedulerState>,
+) -> Result<scheduler::ScheduleStatus, String> {
+    cancel_platform_schedule(app, scheduler).await
+}
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+async fn cancel_platform_schedule<R: Runtime>(
+    _app: AppHandle<R>,
+    scheduler: State<'_, scheduler::SchedulerState>,
+) -> Result<scheduler::ScheduleStatus, String> {
+    scheduler.cancel()
+}
+
+#[cfg(target_os = "android")]
+async fn cancel_platform_schedule<R: Runtime>(
+    app: AppHandle<R>,
+    scheduler: State<'_, scheduler::SchedulerState>,
+) -> Result<scheduler::ScheduleStatus, String> {
+    app.state::<platform::PlatformWallpaper<R>>()
+        .cancel_android_schedule()
+        .await?;
+    scheduler.cancel()
+}
+
+#[cfg(target_os = "ios")]
+async fn cancel_platform_schedule<R: Runtime>(
+    _app: AppHandle<R>,
+    _scheduler: State<'_, scheduler::SchedulerState>,
+) -> Result<scheduler::ScheduleStatus, String> {
+    Err("Background scheduling is not available on iOS yet".to_string())
+}
+
+#[tauri::command]
+fn schedule_status(
+    scheduler: State<'_, scheduler::SchedulerState>,
+) -> Result<scheduler::ScheduleStatus, String> {
+    scheduler.status()
+}
+
 #[tauri::command]
 async fn apply_wallpaper<R: Runtime>(
     app: AppHandle<R>,
     wallpaper: WallpaperItem,
     config: AppConfig,
 ) -> Result<UpdateResult, String> {
-    let bytes = reqwest::get(&wallpaper.image_url)
+    let bytes = download_wallpaper_bytes(&wallpaper).await?;
+
+    apply_downloaded_wallpaper(app, wallpaper, config, bytes).await
+}
+
+async fn download_wallpaper_bytes(wallpaper: &WallpaperItem) -> Result<Vec<u8>, String> {
+    reqwest::get(&wallpaper.image_url)
         .await
         .map_err(|err| format!("Failed to download wallpaper: {err}"))?
         .error_for_status()
         .map_err(|err| format!("Wallpaper download returned an error: {err}"))?
         .bytes()
         .await
-        .map_err(|err| format!("Failed to read wallpaper bytes: {err}"))?;
-
-    apply_downloaded_wallpaper(app, wallpaper, config, bytes.to_vec()).await
+        .map(|bytes| bytes.to_vec())
+        .map_err(|err| format!("Failed to read wallpaper bytes: {err}"))
 }
 
 #[cfg(target_os = "android")]
@@ -146,6 +260,15 @@ async fn apply_downloaded_wallpaper<R: Runtime>(
 #[cfg(not(target_os = "android"))]
 async fn apply_downloaded_wallpaper<R: Runtime>(
     _app: AppHandle<R>,
+    wallpaper: WallpaperItem,
+    config: AppConfig,
+    bytes: Vec<u8>,
+) -> Result<UpdateResult, String> {
+    apply_downloaded_wallpaper_desktop(wallpaper, config, bytes)
+}
+
+#[cfg(not(target_os = "android"))]
+fn apply_downloaded_wallpaper_desktop(
     wallpaper: WallpaperItem,
     config: AppConfig,
     bytes: Vec<u8>,
@@ -197,11 +320,39 @@ fn wallpaper_directory() -> Result<PathBuf, String> {
 
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 fn set_system_wallpaper(path: &PathBuf, _fit_mode: FitMode) -> Result<(), String> {
+    if is_kde_desktop() && command_exists("plasma-apply-wallpaperimage") {
+        let status = Command::new("plasma-apply-wallpaperimage")
+            .arg(path)
+            .status()
+            .map_err(|err| format!("Failed to run plasma-apply-wallpaperimage: {err}"))?;
+        if status.success() {
+            return Ok(());
+        }
+    }
+
     wallpaper::set_from_path(
         path.to_str()
             .ok_or_else(|| "Wallpaper path is not valid UTF-8".to_string())?,
     )
     .map_err(|err| format!("Failed to set system wallpaper: {err}"))
+}
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+fn is_kde_desktop() -> bool {
+    std::env::var("XDG_CURRENT_DESKTOP")
+        .map(|desktop| desktop.split(':').any(|part| part.eq_ignore_ascii_case("KDE")))
+        .unwrap_or(false)
+}
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+fn command_exists(command: &str) -> bool {
+    std::env::var_os("PATH")
+        .and_then(|paths| {
+            std::env::split_paths(&paths)
+                .map(|path| path.join(command))
+                .find(|path| path.is_file())
+        })
+        .is_some()
 }
 
 #[cfg(target_os = "ios")]
@@ -229,14 +380,27 @@ async fn clear_platform_wallpaper<R: Runtime>(_app: AppHandle<R>) -> Result<Stri
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(scheduler::SchedulerState::default())
         .plugin(platform::init())
         .plugin(tauri_plugin_opener::init())
+        .setup(|app| {
+            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+            tray::setup_tray(app)?;
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+            tray::handle_window_event(window, event);
+        })
         .invoke_handler(tauri::generate_handler![
             default_config,
             fetch_bing_gallery,
             manual_update,
             apply_wallpaper,
-            clear_system_wallpaper
+            clear_system_wallpaper,
+            configure_schedule,
+            cancel_schedule,
+            schedule_status
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

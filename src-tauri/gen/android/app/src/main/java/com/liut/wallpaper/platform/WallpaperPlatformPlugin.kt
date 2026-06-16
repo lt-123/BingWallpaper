@@ -2,6 +2,7 @@ package com.liut.wallpaper.platform
 
 import android.app.Activity
 import android.app.WallpaperManager
+import android.content.Context
 import android.content.ContentValues
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -19,8 +20,17 @@ import app.tauri.annotation.TauriPlugin
 import app.tauri.plugin.Invoke
 import app.tauri.plugin.JSObject
 import app.tauri.plugin.Plugin
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
+import java.util.concurrent.TimeUnit
+
+const val SCHEDULE_WORK_NAME = "wallpaper-client-schedule"
+const val SCHEDULE_PREFS_NAME = "wallpaper-client-schedule"
+const val PREF_CONFIG_JSON = "configJson"
+const val PREF_NOTIFY_BACKGROUND = "notifyBackground"
+const val MIN_PERIODIC_INTERVAL_MINUTES = 15L
 
 @InvokeArg
 class SaveAndApplyWallpaperArgs {
@@ -31,6 +41,18 @@ class SaveAndApplyWallpaperArgs {
   var setLockScreen: Boolean = false
   var saveToGallery: Boolean = true
   var showToast: Boolean = true
+}
+
+@InvokeArg
+class ConfigureScheduleArgs {
+  var enabled: Boolean = false
+  var intervalMinutes: Long = MIN_PERIODIC_INTERVAL_MINUTES
+  var notifyOnBackgroundUpdate: Boolean = true
+  lateinit var configJson: String
+}
+
+fun normalizedWorkIntervalMinutes(intervalMinutes: Long): Long {
+  return intervalMinutes.coerceAtLeast(MIN_PERIODIC_INTERVAL_MINUTES)
 }
 
 enum class WallpaperFitMode {
@@ -75,13 +97,13 @@ class WallpaperPlatformPlugin(private val activity: Activity) : Plugin(activity)
       val args = invoke.parseArgs(SaveAndApplyWallpaperArgs::class.java)
       val imageBytes = Base64.decode(args.imageBase64, Base64.DEFAULT)
       val uri = if (args.saveToGallery) {
-        saveToPictures(args.fileName, args.mimeType, imageBytes).toString()
+        saveToPictures(activity, args.fileName, args.mimeType, imageBytes).toString()
       } else {
         ""
       }
       val targets = WallpaperTargets.from(args.setLockScreen)
       val bitmap = decodeBitmap(imageBytes)
-      applyWallpaper(bitmap, WallpaperFitMode.fromWire(args.fitMode), targets)
+      applyWallpaper(activity, bitmap, WallpaperFitMode.fromWire(args.fitMode), targets)
 
       val result = JSObject()
       result.put("uri", uri)
@@ -110,70 +132,125 @@ class WallpaperPlatformPlugin(private val activity: Activity) : Plugin(activity)
     }
   }
 
-  private fun saveToPictures(fileName: String, mimeType: String, imageBytes: ByteArray): Uri {
-    val resolver = activity.contentResolver
-    val values = ContentValues().apply {
-      put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
-      put(MediaStore.Images.Media.MIME_TYPE, mimeType)
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        put(
-          MediaStore.Images.Media.RELATIVE_PATH,
-          "${Environment.DIRECTORY_PICTURES}/Wallpaper Client"
-        )
-        put(MediaStore.Images.Media.IS_PENDING, 1)
+  @Command
+  fun configureSchedule(invoke: Invoke) {
+    try {
+      val args = invoke.parseArgs(ConfigureScheduleArgs::class.java)
+      if (!args.enabled) {
+        cancelScheduledWork()
+        invoke.resolve(scheduleResult("Automatic updates disabled"))
+        return
       }
+
+      activity
+        .getSharedPreferences(SCHEDULE_PREFS_NAME, Context.MODE_PRIVATE)
+        .edit()
+        .putString(PREF_CONFIG_JSON, args.configJson)
+        .putBoolean(PREF_NOTIFY_BACKGROUND, args.notifyOnBackgroundUpdate)
+        .apply()
+
+      val request = PeriodicWorkRequestBuilder<ScheduledWallpaperWorker>(
+        normalizedWorkIntervalMinutes(args.intervalMinutes),
+        TimeUnit.MINUTES
+      ).build()
+
+      WorkManager.getInstance(activity).enqueueUniquePeriodicWork(
+        SCHEDULE_WORK_NAME,
+        ExistingPeriodicWorkPolicy.UPDATE,
+        request
+      )
+
+      invoke.resolve(scheduleResult("Automatic updates enabled every ${normalizedWorkIntervalMinutes(args.intervalMinutes)} minute(s)"))
+    } catch (ex: Exception) {
+      invoke.reject(ex.message ?: ex.toString())
     }
+  }
 
-    val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-      ?: error("Could not create MediaStore image entry")
-    resolver.openOutputStream(uri)?.use { output -> output.write(imageBytes) }
-      ?: error("Could not open MediaStore output stream")
+  @Command
+  fun cancelSchedule(invoke: Invoke) {
+    try {
+      cancelScheduledWork()
+      invoke.resolve(scheduleResult("Automatic updates disabled"))
+    } catch (ex: Exception) {
+      invoke.reject(ex.message ?: ex.toString())
+    }
+  }
 
+  private fun cancelScheduledWork() {
+    WorkManager.getInstance(activity).cancelUniqueWork(SCHEDULE_WORK_NAME)
+  }
+}
+
+fun scheduleResult(message: String): JSObject {
+  val result = JSObject()
+  result.put("message", message)
+  return result
+}
+
+fun saveToPictures(context: Context, fileName: String, mimeType: String, imageBytes: ByteArray): Uri {
+  val resolver = context.contentResolver
+  val values = ContentValues().apply {
+    put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+    put(MediaStore.Images.Media.MIME_TYPE, mimeType)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      val finishedValues = ContentValues().apply {
-        put(MediaStore.Images.Media.IS_PENDING, 0)
-      }
-      resolver.update(uri, finishedValues, null, null)
-    }
-
-    return uri
-  }
-
-  private fun decodeBitmap(imageBytes: ByteArray): Bitmap {
-    return BitmapFactory.decodeStream(ByteArrayInputStream(imageBytes))
-      ?: error("Could not decode wallpaper image")
-  }
-
-  private fun applyWallpaper(
-    bitmap: Bitmap,
-    fitMode: WallpaperFitMode,
-    targets: WallpaperTargets
-  ) {
-    val manager = WallpaperManager.getInstance(activity)
-    val targetBitmap = renderForDevice(bitmap, fitMode, manager.desiredMinimumWidth, manager.desiredMinimumHeight)
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-      manager.setBitmap(targetBitmap, null, true, targets.flags())
-    } else {
-      manager.setBitmap(targetBitmap)
+      put(
+        MediaStore.Images.Media.RELATIVE_PATH,
+        "${Environment.DIRECTORY_PICTURES}/Wallpaper Client"
+      )
+      put(MediaStore.Images.Media.IS_PENDING, 1)
     }
   }
 
-  private fun renderForDevice(
-    bitmap: Bitmap,
-    fitMode: WallpaperFitMode,
-    desiredWidth: Int,
-    desiredHeight: Int
-  ): Bitmap {
-    val width = if (desiredWidth > 0) desiredWidth else bitmap.width
-    val height = if (desiredHeight > 0) desiredHeight else bitmap.height
-    if (width == bitmap.width && height == bitmap.height) return bitmap
+  val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+    ?: error("Could not create MediaStore image entry")
+  resolver.openOutputStream(uri)?.use { output -> output.write(imageBytes) }
+    ?: error("Could not open MediaStore output stream")
 
-    val output = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(output)
-    val target = destinationRect(bitmap.width, bitmap.height, width, height, fitMode)
-    canvas.drawBitmap(bitmap, null, target, null)
-    return output
+  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+    val finishedValues = ContentValues().apply {
+      put(MediaStore.Images.Media.IS_PENDING, 0)
+    }
+    resolver.update(uri, finishedValues, null, null)
   }
+
+  return uri
+}
+
+fun decodeBitmap(imageBytes: ByteArray): Bitmap {
+  return BitmapFactory.decodeStream(ByteArrayInputStream(imageBytes))
+    ?: error("Could not decode wallpaper image")
+}
+
+fun applyWallpaper(
+  context: Context,
+  bitmap: Bitmap,
+  fitMode: WallpaperFitMode,
+  targets: WallpaperTargets
+) {
+  val manager = WallpaperManager.getInstance(context)
+  val targetBitmap = renderForDevice(bitmap, fitMode, manager.desiredMinimumWidth, manager.desiredMinimumHeight)
+  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+    manager.setBitmap(targetBitmap, null, true, targets.flags())
+  } else {
+    manager.setBitmap(targetBitmap)
+  }
+}
+
+fun renderForDevice(
+  bitmap: Bitmap,
+  fitMode: WallpaperFitMode,
+  desiredWidth: Int,
+  desiredHeight: Int
+): Bitmap {
+  val width = if (desiredWidth > 0) desiredWidth else bitmap.width
+  val height = if (desiredHeight > 0) desiredHeight else bitmap.height
+  if (width == bitmap.width && height == bitmap.height) return bitmap
+
+  val output = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+  val canvas = Canvas(output)
+  val target = destinationRect(bitmap.width, bitmap.height, width, height, fitMode)
+  canvas.drawBitmap(bitmap, null, target, null)
+  return output
 }
 
 fun destinationRect(
