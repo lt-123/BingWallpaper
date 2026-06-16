@@ -1,8 +1,13 @@
-use serde::{Deserialize, Serialize};
+#[cfg(target_os = "android")]
+use serde::Deserialize;
+#[cfg(any(test, target_os = "android"))]
+use serde::Serialize;
 use tauri::{plugin::TauriPlugin, Manager, Runtime};
 
+#[cfg(any(test, target_os = "android"))]
 use wallpaper_core::config::FitMode;
 
+#[cfg(target_os = "android")]
 use crate::AppConfig;
 
 #[cfg(mobile)]
@@ -11,6 +16,7 @@ use tauri::plugin::PluginHandle;
 #[cfg(target_os = "android")]
 const PLUGIN_IDENTIFIER: &str = "com.liut.wallpaper.platform";
 
+#[cfg(any(test, target_os = "android"))]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AndroidSaveWallpaperPayload {
@@ -23,6 +29,7 @@ pub struct AndroidSaveWallpaperPayload {
     pub show_toast: bool,
 }
 
+#[cfg(target_os = "android")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AndroidSchedulePayload {
@@ -32,6 +39,7 @@ pub struct AndroidSchedulePayload {
     pub config_json: String,
 }
 
+#[cfg(target_os = "android")]
 impl From<AppConfig> for AndroidSchedulePayload {
     fn from(config: AppConfig) -> Self {
         Self {
@@ -44,6 +52,7 @@ impl From<AppConfig> for AndroidSchedulePayload {
     }
 }
 
+#[cfg(target_os = "android")]
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AndroidSaveWallpaperResponse {
@@ -105,12 +114,14 @@ impl<R: Runtime> PlatformWallpaper<R> {
     }
 }
 
+#[cfg(target_os = "android")]
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AndroidClearWallpaperResponse {
     pub message: String,
 }
 
+#[cfg(target_os = "android")]
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AndroidScheduleResponse {
@@ -119,10 +130,10 @@ pub struct AndroidScheduleResponse {
 
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     tauri::plugin::Builder::new("wallpaper-platform")
-        .setup(|app, api| {
+        .setup(|app, _api| {
             #[cfg(target_os = "android")]
             let handle =
-                api.register_android_plugin(PLUGIN_IDENTIFIER, "WallpaperPlatformPlugin")?;
+                _api.register_android_plugin(PLUGIN_IDENTIFIER, "WallpaperPlatformPlugin")?;
 
             app.manage(PlatformWallpaper {
                 #[cfg(mobile)]

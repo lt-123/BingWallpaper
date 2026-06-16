@@ -20,6 +20,7 @@ pub struct SchedulerState {
 }
 
 impl SchedulerState {
+    #[cfg(any(test, target_os = "android"))]
     pub fn configure(&self, config: AppConfig) -> Result<ScheduleStatus, String> {
         self.remember_config(config.clone())?;
         self.stop_current();
