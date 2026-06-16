@@ -1,7 +1,7 @@
 .app {
   width: min(1180px, calc(100vw - 32px));
   margin: 0 auto;
-  padding: 84px 0 24px;
+  padding: calc(84px + env(safe-area-inset-top, 0px)) 0 24px;
 }
 
 .section-header {
@@ -31,7 +31,7 @@
   align-items: center;
   width: 100%;
   min-height: 64px;
-  padding: 10px max(16px, calc((100vw - 1180px) / 2));
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) max(16px, calc((100vw - 1180px) / 2)) 10px;
   border-bottom: 1px solid var(--pico-muted-border-color);
   background: var(--pico-background-color);
 }
