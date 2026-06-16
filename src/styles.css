@@ -1,0 +1,100 @@
+.app {
+  width: min(1440px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 24px 0;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.toolbar h1,
+.toolbar p {
+  margin: 0;
+}
+
+.actions,
+.settings-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.settings {
+  position: sticky;
+  top: 16px;
+}
+
+.content {
+  min-width: 0;
+}
+
+.preview {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(220px, 360px);
+  gap: 16px;
+  align-items: center;
+  min-height: 320px;
+}
+
+.preview img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--pico-muted-border-color);
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.gallery-item {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  text-align: left;
+  height: 100%;
+}
+
+.gallery-item[aria-pressed="true"] {
+  outline: 3px solid var(--pico-primary);
+}
+
+.gallery-item img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.gallery-item span {
+  min-height: 48px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 860px) {
+  .toolbar,
+  .workspace,
+  .preview {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar {
+    display: grid;
+  }
+
+  .settings {
+    position: static;
+  }
+}

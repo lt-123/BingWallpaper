@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wallpaper Client</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="/main.js" defer></script>
+  </head>
+  <body>
+    <main class="app">
+      <section class="toolbar">
+        <div>
+          <h1>Wallpaper Client</h1>
+          <p id="status" role="status">Ready.</p>
+        </div>
+        <div class="actions">
+          <button id="manualUpdate" type="button">手动同步</button>
+          <button id="refreshGallery" type="button" class="secondary">
+            刷新画廊
+          </button>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <form id="settings" class="settings">
+          <fieldset>
+            <legend>Bing 源</legend>
+            <label>
+              区域
+              <select id="market">
+                <option value="UnitedStates">United States</option>
+                <option value="China">中国</option>
+                <option value="Japan">日本</option>
+                <option value="UnitedKingdom">United Kingdom</option>
+                <option value="Germany">Germany</option>
+                <option value="France">France</option>
+              </select>
+            </label>
+            <label>
+              分辨率
+              <select id="resolution">
+                <option value="Uhd4k">UHD 4K</option>
+                <option value="Standard1920x1080">1920 x 1080</option>
+              </select>
+            </label>
+            <label>
+              画廊数量
+              <input id="count" type="number" min="1" max="8" step="1" />
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>壁纸设置</legend>
+            <label>
+              装配模式
+              <select id="fitMode">
+                <option value="Fill">填充</option>
+                <option value="Fit">适应</option>
+                <option value="Stretch">拉伸</option>
+                <option value="Center">居中</option>
+              </select>
+            </label>
+            <label>
+              <input id="saveToFileSystem" type="checkbox" role="switch" />
+              保存到系统图片目录
+            </label>
+            <label>
+              <input id="setLockScreen" type="checkbox" role="switch" />
+              同时设置锁屏壁纸
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>定时</legend>
+            <label>
+              <input id="scheduleEnabled" type="checkbox" role="switch" />
+              启用自动更新
+            </label>
+            <label>
+              间隔分钟
+              <input id="intervalMinutes" type="number" min="1" step="1" />
+            </label>
+            <label>
+              <input id="notifyBackground" type="checkbox" role="switch" />
+              后台更新时提示
+            </label>
+          </fieldset>
+
+          <div class="settings-actions">
+            <button id="applySelected" type="button">应用选中壁纸</button>
+            <button id="clearWallpaper" type="button" class="contrast">
+              清除系统壁纸
+            </button>
+          </div>
+        </form>
+
+        <section class="content">
+          <article id="preview" class="preview" aria-live="polite"></article>
+          <div>
+            <h2>往期画廊</h2>
+            <div id="gallery" class="gallery"></div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>
