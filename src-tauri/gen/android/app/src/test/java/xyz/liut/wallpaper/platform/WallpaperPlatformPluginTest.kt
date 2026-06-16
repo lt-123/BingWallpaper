@@ -1,4 +1,4 @@
-package com.liut.wallpaper.platform
+package xyz.liut.wallpaper.platform
 
 import android.app.WallpaperManager
 import org.junit.Assert.assertEquals

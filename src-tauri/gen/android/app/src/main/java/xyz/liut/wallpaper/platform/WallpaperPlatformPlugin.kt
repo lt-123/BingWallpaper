@@ -1,4 +1,4 @@
-package com.liut.wallpaper.platform
+package xyz.liut.wallpaper.platform
 
 import android.app.Activity
 import android.app.WallpaperManager
@@ -123,7 +123,14 @@ class WallpaperPlatformPlugin(private val activity: Activity) : Plugin(activity)
   @Command
   fun clearWallpaper(invoke: Invoke) {
     try {
-      WallpaperManager.getInstance(activity).clear()
+      val manager = WallpaperManager.getInstance(activity)
+      // clearWallpaper(flags) 在 API 28 引入；API 24-27 回退到已废弃的 clear()
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        manager.clearWallpaper()
+      } else {
+        @Suppress("DEPRECATION")
+        manager.clear()
+      }
       val result = JSObject()
       result.put("message", "System wallpaper cleared")
       invoke.resolve(result)
@@ -229,11 +236,8 @@ fun applyWallpaper(
 ) {
   val manager = WallpaperManager.getInstance(context)
   val targetBitmap = renderForDevice(bitmap, fitMode, manager.desiredMinimumWidth, manager.desiredMinimumHeight)
-  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-    manager.setBitmap(targetBitmap, null, true, targets.flags())
-  } else {
-    manager.setBitmap(targetBitmap)
-  }
+  // minSdk=24 即 API N，setBitmap(Bitmap) 的废弃版本在此 minSdk 下永远不会执行，直接调用带 flags 的版本
+  manager.setBitmap(targetBitmap, null, true, targets.flags())
 }
 
 fun renderForDevice(

@@ -18,7 +18,7 @@
 set -Eeuo pipefail
 
 APP_NAME="Wallora"
-APP_ID="com.liut.wallpaper"
+APP_ID="xyz.liut.wallpaper"
 SOURCE_BINARY_NAME="wallpaper-app"
 INSTALL_BINARY_NAME="wallora"
 

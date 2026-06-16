@@ -1,4 +1,4 @@
-package com.liut.wallpaper
+package xyz.liut.wallpaper
 
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge

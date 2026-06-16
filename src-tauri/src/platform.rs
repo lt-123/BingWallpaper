@@ -14,7 +14,7 @@ use crate::AppConfig;
 use tauri::plugin::PluginHandle;
 
 #[cfg(target_os = "android")]
-const PLUGIN_IDENTIFIER: &str = "com.liut.wallpaper.platform";
+const PLUGIN_IDENTIFIER: &str = "xyz.liut.wallpaper.platform";
 
 #[cfg(any(test, target_os = "android"))]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

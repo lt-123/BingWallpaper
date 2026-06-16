@@ -1,8 +1,10 @@
-package com.liut.wallpaper.platform
+package xyz.liut.wallpaper.platform
 
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.net.URLEncoder
 import java.net.URL
 import org.json.JSONObject
@@ -13,21 +15,24 @@ class ScheduledWallpaperWorker(
 ) : CoroutineWorker(context, params) {
   override suspend fun doWork(): Result {
     return try {
-      val prefs = applicationContext.getSharedPreferences(SCHEDULE_PREFS_NAME, Context.MODE_PRIVATE)
-      val configJson = prefs.getString(PREF_CONFIG_JSON, null) ?: return Result.failure()
-      val config = JSONObject(configJson)
-      val wallpaper = fetchLatestWallpaper(config)
-      val imageBytes = URL(wallpaper.imageUrl).readBytes()
-      if (config.optBoolean("save_to_file_system", true)) {
-        saveToPictures(applicationContext, wallpaper.fileName(), "image/jpeg", imageBytes)
+      // 网络请求和文件 I/O 均在 IO 调度器上执行，避免阻塞 Default 线程池
+      withContext(Dispatchers.IO) {
+        val prefs = applicationContext.getSharedPreferences(SCHEDULE_PREFS_NAME, Context.MODE_PRIVATE)
+        val configJson = prefs.getString(PREF_CONFIG_JSON, null) ?: return@withContext Result.failure()
+        val config = JSONObject(configJson)
+        val wallpaper = fetchLatestWallpaper(config)
+        val imageBytes = URL(wallpaper.imageUrl).openStream().readBytes()
+        if (config.optBoolean("save_to_file_system", true)) {
+          saveToPictures(applicationContext, wallpaper.fileName(), "image/jpeg", imageBytes)
+        }
+        applyWallpaper(
+          applicationContext,
+          decodeBitmap(imageBytes),
+          WallpaperFitMode.fromWire(config.optString("fit_mode", "Fill")),
+          WallpaperTargets.from(config.optJSONObject("platform")?.optBoolean("set_lock_screen", false) ?: false)
+        )
+        Result.success()
       }
-      applyWallpaper(
-        applicationContext,
-        decodeBitmap(imageBytes),
-        WallpaperFitMode.fromWire(config.optString("fit_mode", "Fill")),
-        WallpaperTargets.from(config.optJSONObject("platform")?.optBoolean("set_lock_screen", false) ?: false)
-      )
-      Result.success()
     } catch (ex: Exception) {
       Result.retry()
     }
@@ -56,7 +61,8 @@ fun fetchLatestWallpaper(config: JSONObject): ScheduledWallpaper {
     resolution = bing.optString("resolution", "Standard1920x1080"),
     count = bing.optInt("count", 1)
   )
-  val response = JSONObject(URL(archiveUrl).readText())
+  // 使用 openStream() 替代已废弃的 URL.readText()
+  val response = JSONObject(URL(archiveUrl).openStream().bufferedReader().use { it.readText() })
   val image = response.getJSONArray("images").getJSONObject(0)
   val rawImageUrl = image.getString("url")
   val imageUrl = if (rawImageUrl.startsWith("http")) rawImageUrl else "https://www.bing.com$rawImageUrl"
