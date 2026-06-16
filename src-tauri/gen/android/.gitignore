@@ -1,21 +1,13 @@
 *.iml
 .gradle
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+/.idea
 .DS_Store
 build
 /captures
 .externalNativeBuild
 .cxx
 local.properties
-key.properties
-# keystore.properties 由项目明文托管（测试签名），不忽略
-# keystore.properties
 
 /.tauri
 /tauri.settings.gradle
