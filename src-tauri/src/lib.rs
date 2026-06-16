@@ -2,9 +2,10 @@
 use std::fs;
 use std::path::PathBuf;
 
+#[cfg(target_os = "android")]
 use base64::{engine::general_purpose, Engine as _};
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager, Runtime};
+use tauri::{AppHandle, Runtime};
 use wallpaper_core::{
     bing::{BingConfig, BingSource, BingWallpaperResponse},
     config::{FitMode, ScheduleConfig},
@@ -154,7 +155,7 @@ async fn apply_downloaded_wallpaper<R: Runtime>(
         fs::create_dir_all(&directory)
             .map_err(|err| format!("Failed to create wallpaper directory: {err}"))?;
         let path = directory.join(wallpaper.download_file_name());
-        fs::write(&path, bytes.as_ref())
+        fs::write(&path, bytes.as_slice())
             .map_err(|err| format!("Failed to save wallpaper file: {err}"))?;
         Some(path)
     } else {
@@ -166,7 +167,7 @@ async fn apply_downloaded_wallpaper<R: Runtime>(
         path
     } else {
         temporary_path = std::env::temp_dir().join(wallpaper.download_file_name());
-        fs::write(&temporary_path, bytes.as_ref())
+        fs::write(&temporary_path, bytes.as_slice())
             .map_err(|err| format!("Failed to prepare temporary wallpaper file: {err}"))?;
         temporary_path
     };
