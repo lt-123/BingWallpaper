@@ -9,6 +9,7 @@
     "tauri": "tauri"
   },
   "devDependencies": {
+    "@picocss/pico": "^2.1.1",
     "@tauri-apps/cli": "^2"
   }
 }

@@ -1,11 +1,6 @@
 #[cfg(target_os = "android")]
-use serde::Deserialize;
-#[cfg(any(test, target_os = "android"))]
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tauri::{plugin::TauriPlugin, Manager, Runtime};
-
-#[cfg(any(test, target_os = "android"))]
-use wallora_core::config::FitMode;
 
 #[cfg(target_os = "android")]
 use crate::AppConfig;
@@ -16,18 +11,9 @@ use tauri::plugin::PluginHandle;
 #[cfg(target_os = "android")]
 const PLUGIN_IDENTIFIER: &str = "xyz.liut.wallora.platform";
 
-#[cfg(any(test, target_os = "android"))]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AndroidSaveWallpaperPayload {
-    pub file_name: String,
-    pub mime_type: String,
-    pub image_base64: String,
-    pub fit_mode: FitMode,
-    pub set_lock_screen: bool,
-    pub save_to_gallery: bool,
-    pub show_toast: bool,
-}
+#[cfg(target_os = "android")]
+use wallora_core::config::ScheduleMode;
+
 
 #[cfg(target_os = "android")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -37,29 +23,29 @@ pub struct AndroidSchedulePayload {
     pub interval_minutes: u32,
     pub notify_on_background_update: bool,
     pub config_json: String,
+    /// "Interval" 或 "DailyAt"，供 Kotlin 插件决定 WorkManager 任务间隔
+    pub schedule_mode: String,
 }
 
 #[cfg(target_os = "android")]
 impl From<AppConfig> for AndroidSchedulePayload {
     fn from(config: AppConfig) -> Self {
+        let schedule_mode = match config.schedule.mode {
+            ScheduleMode::Interval => "Interval",
+            ScheduleMode::DailyAt => "DailyAt",
+        }
+        .to_string();
         Self {
             enabled: config.schedule.enabled,
             interval_minutes: config.schedule.interval_minutes.max(1),
             notify_on_background_update: config.schedule.notify_on_background_update,
             config_json: serde_json::to_string(&config)
                 .expect("AppConfig serialization for Android schedule must not fail"),
+            schedule_mode,
         }
     }
 }
 
-#[cfg(target_os = "android")]
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AndroidSaveWallpaperResponse {
-    pub uri: String,
-    pub applied_home_screen: bool,
-    pub applied_lock_screen: bool,
-}
 
 pub struct PlatformWallpaper<R: Runtime> {
     #[cfg(mobile)]
@@ -69,16 +55,6 @@ pub struct PlatformWallpaper<R: Runtime> {
 }
 
 impl<R: Runtime> PlatformWallpaper<R> {
-    #[cfg(target_os = "android")]
-    pub async fn save_and_apply_android(
-        &self,
-        payload: AndroidSaveWallpaperPayload,
-    ) -> Result<AndroidSaveWallpaperResponse, String> {
-        self.mobile_plugin_handle
-            .run_mobile_plugin_async("saveAndApplyWallpaper", payload)
-            .await
-            .map_err(|err| err.to_string())
-    }
 
     #[cfg(target_os = "android")]
     pub async fn clear_android_wallpaper(&self) -> Result<String, String> {
@@ -111,6 +87,32 @@ impl<R: Runtime> PlatformWallpaper<R> {
             .await
             .map_err(|err| err.to_string())?;
         Ok(response.message)
+    }
+
+    /// 查询是否已豁免电池优化（仅 Android）。
+    #[cfg(target_os = "android")]
+    pub async fn check_battery_exemption(&self) -> Result<bool, String> {
+        #[derive(serde::Deserialize)]
+        struct Resp {
+            exempted: bool,
+        }
+        let resp: Resp = self
+            .mobile_plugin_handle
+            .run_mobile_plugin_async("checkBatteryOptimization", serde_json::json!({}))
+            .await
+            .map_err(|err| err.to_string())?;
+        Ok(resp.exempted)
+    }
+
+    /// 打开系统页面引导用户申请电池优化豁免（仅 Android）。
+    #[cfg(target_os = "android")]
+    pub async fn request_battery_exemption(&self) -> Result<(), String> {
+        let _: serde_json::Value = self
+            .mobile_plugin_handle
+            .run_mobile_plugin_async("requestBatteryExemption", serde_json::json!({}))
+            .await
+            .map_err(|err| err.to_string())?;
+        Ok(())
     }
 }
 
@@ -148,28 +150,8 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
-    fn android_wallpaper_payload_serializes_for_kotlin_plugin() {
-        let payload = AndroidSaveWallpaperPayload {
-            file_name: "bing-20260616-sample.jpg".to_string(),
-            mime_type: "image/jpeg".to_string(),
-            image_base64: "AQID".to_string(),
-            fit_mode: FitMode::Fit,
-            set_lock_screen: true,
-            save_to_gallery: true,
-            show_toast: true,
-        };
-
-        let json = serde_json::to_value(payload).unwrap();
-
-        assert_eq!(json["fileName"], "bing-20260616-sample.jpg");
-        assert_eq!(json["mimeType"], "image/jpeg");
-        assert_eq!(json["imageBase64"], "AQID");
-        assert_eq!(json["fitMode"], "Fit");
-        assert_eq!(json["setLockScreen"], true);
-        assert_eq!(json["saveToGallery"], true);
-        assert_eq!(json["showToast"], true);
+    fn platform_module_compiles() {
+        // 平台模块结构正确，Android 特定类型由 cfg(target_os = "android") 保护。
     }
 }

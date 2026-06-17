@@ -4,8 +4,6 @@ use std::path::PathBuf;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 use std::process::Command;
 
-#[cfg(target_os = "android")]
-use base64::{engine::general_purpose, Engine as _};
 use serde::{Deserialize, Serialize};
 #[cfg(target_os = "android")]
 use tauri::Manager;
@@ -20,6 +18,8 @@ mod platform;
 mod scheduler;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 mod tray;
+#[cfg(target_os = "android")]
+mod android_jni;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
@@ -35,11 +35,7 @@ impl Default for AppConfig {
         Self {
             bing: BingConfig::default(),
             fit_mode: FitMode::Fill,
-            schedule: ScheduleConfig {
-                enabled: false,
-                interval_minutes: 360,
-                notify_on_background_update: true,
-            },
+            schedule: ScheduleConfig::default(),
             save_to_file_system: true,
             platform: PlatformConfig::default(),
         }
@@ -73,6 +69,8 @@ pub struct UpdateResult {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlatformCapabilities {
     pub can_clear_wallpaper: bool,
+    /// Android 设备可能受电池优化影响后台任务，此为 true 时显示豁免引导
+    pub has_battery_optimization: bool,
 }
 
 /// 向前端返回默认应用配置，用于首次运行或 localStorage 无缓存时的初始化。
@@ -82,11 +80,11 @@ fn default_config() -> AppConfig {
 }
 
 /// 返回当前平台支持的功能集合，前端根据此结果显示或隐藏对应按钮。
-/// 目前仅 Android 支持"清除系统壁纸"功能。
 #[tauri::command]
 fn platform_capabilities() -> PlatformCapabilities {
     PlatformCapabilities {
         can_clear_wallpaper: cfg!(target_os = "android"),
+        has_battery_optimization: cfg!(target_os = "android"),
     }
 }
 
@@ -96,6 +94,13 @@ fn platform_capabilities() -> PlatformCapabilities {
 /// Bing 实际历史深度约 15 条，正常使用不会触及 u8 上限（255）。
 #[tauri::command]
 async fn fetch_bing_gallery(config: BingConfig, page: u8) -> Result<Vec<WallpaperItem>, String> {
+    fetch_bing_gallery_impl(config, page).await
+}
+
+pub(crate) async fn fetch_bing_gallery_impl(
+    config: BingConfig,
+    page: u8,
+) -> Result<Vec<WallpaperItem>, String> {
     let request = BingSource::new(config.clone()).archive_request(page);
     let response = reqwest::get(request.to_url())
         .await
@@ -236,13 +241,86 @@ async fn apply_wallpaper<R: Runtime>(
     wallpaper: WallpaperItem,
     config: AppConfig,
 ) -> Result<UpdateResult, String> {
-    let bytes = download_wallpaper_bytes(&wallpaper).await?;
+    platform_apply_wallpaper(app, wallpaper, config).await
+}
 
+#[cfg(target_os = "android")]
+async fn platform_apply_wallpaper<R: Runtime>(
+    _app: AppHandle<R>,
+    wallpaper: WallpaperItem,
+    config: AppConfig,
+) -> Result<UpdateResult, String> {
+    // Rust async 下载（保留重试逻辑，与桌面路径统一）
+    let bytes = download_bytes_by_url(&wallpaper.image_url).await?;
+
+    // JNI 调用须在阻塞线程上执行
+    let wallpaper_ref = wallpaper.clone();
+    tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
+        let vm = android_jni::JAVA_VM
+            .get()
+            .ok_or("JavaVM 未初始化，请确认 RustCore.initialize() 在 Plugin 中已调用")?;
+        let ctx = android_jni::GLOBAL_APP_CONTEXT
+            .get()
+            .ok_or("Application Context 未初始化")?;
+        let mut env = vm
+            .attach_current_thread()
+            .map_err(|e| format!("attach_current_thread 失败: {e}"))?;
+        android_jni::apply_bytes_via_jni(
+            &mut env,
+            ctx.as_obj(),
+            &bytes,
+            &wallpaper_ref.download_file_name(),
+            &wallpaper_ref.title,
+            &config,
+            config.platform.notify_on_manual_update,
+        )
+    })
+    .await
+    .map_err(|e| format!("spawn_blocking 错误: {e}"))??;
+
+    Ok(UpdateResult {
+        wallpaper,
+        saved_path: None,
+        saved_uri: None,
+        applied: true,
+        message: "Wallpaper updated".to_string(),
+    })
+}
+
+#[cfg(not(target_os = "android"))]
+async fn platform_apply_wallpaper<R: Runtime>(
+    app: AppHandle<R>,
+    wallpaper: WallpaperItem,
+    config: AppConfig,
+) -> Result<UpdateResult, String> {
+    let bytes = download_wallpaper_bytes(&wallpaper).await?;
     apply_downloaded_wallpaper(app, wallpaper, config, bytes).await
 }
 
+#[cfg(not(target_os = "android"))]
 async fn download_wallpaper_bytes(wallpaper: &WallpaperItem) -> Result<Vec<u8>, String> {
-    reqwest::get(&wallpaper.image_url)
+    download_bytes_by_url(&wallpaper.image_url).await
+}
+
+pub(crate) async fn download_bytes_by_url(url: &str) -> Result<Vec<u8>, String> {
+    const MAX_RETRIES: u32 = 3;
+    let mut last_err = String::new();
+    for attempt in 0..MAX_RETRIES {
+        match try_download_once(url).await {
+            Ok(bytes) => return Ok(bytes),
+            Err(err) => {
+                last_err = err;
+                if attempt + 1 < MAX_RETRIES {
+                    eprintln!("Download attempt {}/{MAX_RETRIES} failed, retrying…", attempt + 1);
+                }
+            }
+        }
+    }
+    Err(format!("Download failed after {MAX_RETRIES} attempts: {last_err}"))
+}
+
+async fn try_download_once(url: &str) -> Result<Vec<u8>, String> {
+    reqwest::get(url)
         .await
         .map_err(|err| format!("Failed to download wallpaper: {err}"))?
         .error_for_status()
@@ -251,35 +329,6 @@ async fn download_wallpaper_bytes(wallpaper: &WallpaperItem) -> Result<Vec<u8>, 
         .await
         .map(|bytes| bytes.to_vec())
         .map_err(|err| format!("Failed to read wallpaper bytes: {err}"))
-}
-
-#[cfg(target_os = "android")]
-async fn apply_downloaded_wallpaper<R: Runtime>(
-    app: AppHandle<R>,
-    wallpaper: WallpaperItem,
-    config: AppConfig,
-    bytes: Vec<u8>,
-) -> Result<UpdateResult, String> {
-    let response = app
-        .state::<platform::PlatformWallpaper<R>>()
-        .save_and_apply_android(platform::AndroidSaveWallpaperPayload {
-            file_name: wallpaper.download_file_name(),
-            mime_type: "image/jpeg".to_string(),
-            image_base64: general_purpose::STANDARD.encode(bytes),
-            fit_mode: config.fit_mode,
-            set_lock_screen: config.platform.set_lock_screen,
-            save_to_gallery: config.save_to_file_system,
-            show_toast: config.platform.notify_on_manual_update,
-        })
-        .await?;
-
-    Ok(UpdateResult {
-        wallpaper,
-        saved_path: None,
-        saved_uri: (!response.uri.is_empty()).then_some(response.uri),
-        applied: response.applied_home_screen || response.applied_lock_screen,
-        message: "Wallpaper updated".to_string(),
-    })
 }
 
 #[cfg(not(target_os = "android"))]
@@ -411,6 +460,42 @@ async fn clear_platform_wallpaper<R: Runtime>(_app: AppHandle<R>) -> Result<Stri
     Err("iOS wallpaper clearing requires a native platform adapter".to_string())
 }
 
+/// 查询当前是否已豁免电池优化（Android 返回实际状态，其他平台始终返回 true）。
+#[tauri::command]
+async fn check_battery_exemption<R: Runtime>(app: AppHandle<R>) -> Result<bool, String> {
+    check_platform_battery_exemption(app).await
+}
+
+#[cfg(target_os = "android")]
+async fn check_platform_battery_exemption<R: Runtime>(app: AppHandle<R>) -> Result<bool, String> {
+    app.state::<platform::PlatformWallpaper<R>>()
+        .check_battery_exemption()
+        .await
+}
+
+#[cfg(not(target_os = "android"))]
+async fn check_platform_battery_exemption<R: Runtime>(_app: AppHandle<R>) -> Result<bool, String> {
+    Ok(true)
+}
+
+/// 打开系统页面引导用户申请电池优化豁免（非强制）。
+#[tauri::command]
+async fn request_battery_exemption<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
+    request_platform_battery_exemption(app).await
+}
+
+#[cfg(target_os = "android")]
+async fn request_platform_battery_exemption<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
+    app.state::<platform::PlatformWallpaper<R>>()
+        .request_battery_exemption()
+        .await
+}
+
+#[cfg(not(target_os = "android"))]
+async fn request_platform_battery_exemption<R: Runtime>(_app: AppHandle<R>) -> Result<(), String> {
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -435,7 +520,9 @@ pub fn run() {
             clear_system_wallpaper,
             configure_schedule,
             cancel_schedule,
-            schedule_status
+            schedule_status,
+            check_battery_exemption,
+            request_battery_exemption
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

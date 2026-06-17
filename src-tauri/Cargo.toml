@@ -25,7 +25,13 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 dirs = "6"
-base64 = "0.22"
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 wallpaper = "3.2"
+
+[target.'cfg(target_os = "android")'.dependencies]
+# invocation feature 允许在 JNI 函数外通过存储的 JavaVM attach 新线程
+jni = { version = "0.21", features = ["invocation"] }
+# 显式声明 tokio 供 android_jni.rs 创建单线程 runtime；Tauri 已编译全特性，此处无冲突
+tokio = { version = "1", features = ["rt"] }

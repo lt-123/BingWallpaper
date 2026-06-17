@@ -19,3 +19,8 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# JNI bridge: Rust calls these classes/methods by string name at runtime.
+# R8 cannot see the references and would remove them without these rules.
+-keep class xyz.liut.wallora.platform.RustCore { *; }
+-keep class xyz.liut.wallora.platform.PlatformApis { *; }

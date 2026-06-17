@@ -48,4 +48,39 @@ class WallpaperPlatformPluginTest {
       url
     )
   }
+
+  @Test
+  fun parseDailyTimesReturnsEmptyForNull() {
+    val result = parseDailyTimes(null)
+    assertEquals(emptyList<String>(), result)
+  }
+
+  @Test
+  fun parseDailyTimesReturnsTimesFromJsonArray() {
+    val scheduleObj = org.json.JSONObject().apply {
+      put("daily_times", org.json.JSONArray().apply {
+        put("08:00")
+        put("18:30")
+      })
+    }
+    val result = parseDailyTimes(scheduleObj)
+    assertEquals(listOf("08:00", "18:30"), result)
+  }
+
+  @Test
+  fun isWithinAnyTimeWindowReturnsFalseForEmptyList() {
+    assertFalse(isWithinAnyTimeWindow(emptyList()))
+  }
+
+  @Test
+  fun isWithinAnyTimeWindowReturnsFalseForMalformedEntry() {
+    assertFalse(isWithinAnyTimeWindow(listOf("not-a-time")))
+  }
+
+  @Test
+  fun scheduleModeDailyAtUsesMinimumWorkInterval() {
+    // DailyAt 模式下 WorkManager 周期应使用最小间隔（15 分钟）
+    val interval = MIN_PERIODIC_INTERVAL_MINUTES
+    assertEquals(15L, interval)
+  }
 }

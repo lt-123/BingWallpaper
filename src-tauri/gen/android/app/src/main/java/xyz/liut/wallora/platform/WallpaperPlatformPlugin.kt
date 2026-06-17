@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.WallpaperManager
 import android.content.Context
 import android.content.ContentValues
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -11,9 +12,9 @@ import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.os.PowerManager
 import android.provider.MediaStore
-import android.util.Base64
-import android.widget.Toast
+import android.provider.Settings
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
 import app.tauri.annotation.TauriPlugin
@@ -33,22 +34,12 @@ const val PREF_NOTIFY_BACKGROUND = "notifyBackground"
 const val MIN_PERIODIC_INTERVAL_MINUTES = 15L
 
 @InvokeArg
-class SaveAndApplyWallpaperArgs {
-  lateinit var fileName: String
-  lateinit var mimeType: String
-  lateinit var imageBase64: String
-  lateinit var fitMode: String
-  var setLockScreen: Boolean = false
-  var saveToGallery: Boolean = true
-  var showToast: Boolean = true
-}
-
-@InvokeArg
 class ConfigureScheduleArgs {
   var enabled: Boolean = false
   var intervalMinutes: Long = MIN_PERIODIC_INTERVAL_MINUTES
   var notifyOnBackgroundUpdate: Boolean = true
   lateinit var configJson: String
+  var scheduleMode: String = "Interval"
 }
 
 fun normalizedWorkIntervalMinutes(intervalMinutes: Long): Long {
@@ -91,33 +82,9 @@ data class WallpaperTargets(val home: Boolean, val lock: Boolean) {
 
 @TauriPlugin
 class WallpaperPlatformPlugin(private val activity: Activity) : Plugin(activity) {
-  @Command
-  fun saveAndApplyWallpaper(invoke: Invoke) {
-    try {
-      val args = invoke.parseArgs(SaveAndApplyWallpaperArgs::class.java)
-      val imageBytes = Base64.decode(args.imageBase64, Base64.DEFAULT)
-      val uri = if (args.saveToGallery) {
-        saveToPictures(activity, args.fileName, args.mimeType, imageBytes).toString()
-      } else {
-        ""
-      }
-      val targets = WallpaperTargets.from(args.setLockScreen)
-      val bitmap = decodeBitmap(imageBytes)
-      applyWallpaper(activity, bitmap, WallpaperFitMode.fromWire(args.fitMode), targets)
-
-      val result = JSObject()
-      result.put("uri", uri)
-      result.put("appliedHomeScreen", targets.home)
-      result.put("appliedLockScreen", targets.lock)
-      if (args.showToast) {
-        activity.runOnUiThread {
-          Toast.makeText(activity, "Wallpaper updated", Toast.LENGTH_SHORT).show()
-        }
-      }
-      invoke.resolve(result)
-    } catch (ex: Exception) {
-      invoke.reject(ex.message ?: ex.toString())
-    }
+  init {
+    // 存储 JavaVM 和 Application Context，供 Rust 异步命令路径（spawn_blocking）使用。
+    RustCore.initialize(activity.applicationContext)
   }
 
   @Command
@@ -156,8 +123,15 @@ class WallpaperPlatformPlugin(private val activity: Activity) : Plugin(activity)
         .putBoolean(PREF_NOTIFY_BACKGROUND, args.notifyOnBackgroundUpdate)
         .apply()
 
+      // DailyAt 模式：Worker 内部按时间窗口决定是否执行，周期固定为最小值（15 分钟）
+      val workIntervalMinutes = if (args.scheduleMode == "DailyAt") {
+        MIN_PERIODIC_INTERVAL_MINUTES
+      } else {
+        normalizedWorkIntervalMinutes(args.intervalMinutes)
+      }
+
       val request = PeriodicWorkRequestBuilder<ScheduledWallpaperWorker>(
-        normalizedWorkIntervalMinutes(args.intervalMinutes),
+        workIntervalMinutes,
         TimeUnit.MINUTES
       ).build()
 
@@ -167,10 +141,44 @@ class WallpaperPlatformPlugin(private val activity: Activity) : Plugin(activity)
         request
       )
 
-      invoke.resolve(scheduleResult("Automatic updates enabled every ${normalizedWorkIntervalMinutes(args.intervalMinutes)} minute(s)"))
+      val msg = if (args.scheduleMode == "DailyAt") {
+        "Automatic updates enabled (daily time-based)"
+      } else {
+        "Automatic updates enabled every $workIntervalMinutes minute(s)"
+      }
+      invoke.resolve(scheduleResult(msg))
     } catch (ex: Exception) {
       invoke.reject(ex.message ?: ex.toString())
     }
+  }
+
+  @Command
+  fun checkBatteryOptimization(invoke: Invoke) {
+    val exempted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      val pm = activity.getSystemService(Context.POWER_SERVICE) as PowerManager
+      pm.isIgnoringBatteryOptimizations(activity.packageName)
+    } else {
+      true
+    }
+    val result = JSObject()
+    result.put("exempted", exempted)
+    invoke.resolve(result)
+  }
+
+  @Command
+  fun requestBatteryExemption(invoke: Invoke) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      try {
+        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+          data = Uri.parse("package:${activity.packageName}")
+        }
+        activity.startActivity(intent)
+      } catch (ex: Exception) {
+        // 部分厂商 ROM 可能没有该 Activity，回退到通用电池设置页
+        activity.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+      }
+    }
+    invoke.resolve(JSObject())
   }
 
   @Command

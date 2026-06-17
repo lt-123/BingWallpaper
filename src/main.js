@@ -1,7 +1,9 @@
 import {
   loadStoredConfig,
   readConfigFromForm,
+  renderDailyTimesTags,
   saveStoredConfig,
+  updateScheduleModeVisibility,
   writeConfigToForm,
 } from "./configStore.js";
 import {
@@ -63,10 +65,19 @@ function bindElements() {
     "resolution",
     "fitMode",
     "scheduleEnabled",
+    "scheduleMode",
+    "rowIntervalMinutes",
     "intervalMinutes",
+    "rowDailyTimes",
+    "dailyTimesTags",
+    "newDailyTime",
+    "addDailyTime",
     "notifyBackground",
     "saveToFileSystem",
     "setLockScreen",
+    "rowBatteryExemption",
+    "batteryExemptionStatus",
+    "requestBatteryExemption",
     "pageTitle",
     "status",
     "preview",
@@ -95,6 +106,8 @@ function bindEvents() {
     saveStoredConfig(state.config);
     // 仅更新预览的 objectFit 样式，不重新下载图片
     renderPreview();
+    // scheduleMode 切换时同步显示/隐藏对应配置行
+    updateScheduleModeVisibility(elements);
     void syncSchedule();
 
     // 仅 Bing 源参数（market / resolution）变化时才重置并重载画廊
@@ -103,12 +116,30 @@ function bindEvents() {
     }
   });
 
+  // 添加每日时间点：从 time input 读取并插入 tag 列表
+  elements.addDailyTime.addEventListener("click", () => {
+    const time = elements.newDailyTime.value;
+    if (!time) return;
+    const existing = Array.from(
+      elements.dailyTimesTags.querySelectorAll(".daily-time-tag[data-time]"),
+    ).map((t) => t.dataset.time);
+    if (existing.includes(time)) return;
+    syncConfigFromForm();
+    const newTimes = [...existing, time].sort();
+    renderDailyTimesTags(elements.dailyTimesTags, newTimes);
+    syncConfigFromForm();
+    saveStoredConfig(state.config);
+    void syncSchedule();
+    elements.newDailyTime.value = "";
+  });
+
   elements.refreshGallery.addEventListener("click", () => loadGallery({ reset: true }));
   elements.loadMoreGallery.addEventListener("click", () =>
     loadGallery({ reset: false }),
   );
   elements.applySelected.addEventListener("click", applySelected);
   elements.clearWallpaper.addEventListener("click", clearWallpaper);
+  elements.requestBatteryExemption.addEventListener("click", requestBatteryExemption);
   elements.openSettings.addEventListener("click", () => {
     location.hash = "settings";
   });
@@ -154,15 +185,48 @@ function syncViewFromHash() {
 
 /**
  * 查询平台能力并据此显示/隐藏平台特有功能按钮。
- * 当前仅 Android 支持"清除系统壁纸"，其他平台默认隐藏该按钮。
- * 若 IPC 调用失败（例如插件尚未初始化），保守地隐藏按钮，不向用户展示错误。
+ * 若 IPC 调用失败（例如插件尚未初始化），保守地隐藏平台专属按钮，不展示错误。
  */
 async function syncPlatformCapabilities() {
   try {
     const capabilities = await invoke("platform_capabilities");
     elements.clearWallpaper.hidden = !capabilities.can_clear_wallpaper;
+    elements.rowBatteryExemption.hidden = !capabilities.has_battery_optimization;
+    if (capabilities.has_battery_optimization) {
+      await syncBatteryExemptionStatus();
+    }
   } catch {
     elements.clearWallpaper.hidden = true;
+    elements.rowBatteryExemption.hidden = true;
+  }
+}
+
+/**
+ * 查询电池优化豁免状态并更新 UI 显示。
+ * 若已豁免则显示"已豁免"文字并隐藏申请按钮；否则显示"未豁免"和申请按钮。
+ */
+async function syncBatteryExemptionStatus() {
+  try {
+    const exempted = await invoke("check_battery_exemption");
+    elements.batteryExemptionStatus.textContent = exempted ? "已豁免" : "未豁免（可能影响后台定时）";
+    elements.requestBatteryExemption.hidden = exempted;
+  } catch {
+    elements.batteryExemptionStatus.textContent = "状态未知";
+    elements.requestBatteryExemption.hidden = true;
+  }
+}
+
+/**
+ * 打开系统页面引导用户申请电池优化豁免。
+ * 导航到系统设置后无法得知用户是否完成豁免，延迟 1s 后重新查询状态。
+ */
+async function requestBatteryExemption() {
+  try {
+    await invoke("request_battery_exemption");
+    // 系统页面为异步跳转，500ms 后刷新状态（用户快速返回的场景）
+    setTimeout(() => syncBatteryExemptionStatus(), 500);
+  } catch (error) {
+    setStatus(error);
   }
 }
 
@@ -390,7 +454,9 @@ async function mockInvoke(command, args = {}) {
       fit_mode: "Fill",
       schedule: {
         enabled: false,
+        mode: "Interval",
         interval_minutes: 360,
+        daily_times: [],
         notify_on_background_update: true,
       },
       save_to_file_system: true,
@@ -398,7 +464,13 @@ async function mockInvoke(command, args = {}) {
     };
   }
   if (command === "platform_capabilities") {
-    return { can_clear_wallpaper: false };
+    return { can_clear_wallpaper: false, has_battery_optimization: false };
+  }
+  if (command === "check_battery_exemption") {
+    return true;
+  }
+  if (command === "request_battery_exemption") {
+    return null;
   }
   if (command === "fetch_bing_gallery") {
     const page = Number(args.page ?? 0);

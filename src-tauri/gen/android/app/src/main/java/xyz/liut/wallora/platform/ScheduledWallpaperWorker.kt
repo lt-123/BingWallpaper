@@ -1,108 +1,86 @@
 package xyz.liut.wallora.platform
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.ServiceInfo
+import android.os.Build
+import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
+import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.net.URLEncoder
-import java.net.URL
-import org.json.JSONObject
+import xyz.liut.wallora.R
 
-class ScheduledWallpaperWorker(
-  context: Context,
-  params: WorkerParameters
-) : CoroutineWorker(context, params) {
-  override suspend fun doWork(): Result {
-    return try {
-      // 网络请求和文件 I/O 均在 IO 调度器上执行，避免阻塞 Default 线程池
-      withContext(Dispatchers.IO) {
-        val prefs = applicationContext.getSharedPreferences(SCHEDULE_PREFS_NAME, Context.MODE_PRIVATE)
-        val configJson = prefs.getString(PREF_CONFIG_JSON, null) ?: return@withContext Result.failure()
-        val config = JSONObject(configJson)
-        val wallpaper = fetchLatestWallpaper(config)
-        val imageBytes = URL(wallpaper.imageUrl).openStream().readBytes()
-        if (config.optBoolean("save_to_file_system", true)) {
-          saveToPictures(applicationContext, wallpaper.fileName(), "image/jpeg", imageBytes)
+const val NOTIFICATION_CHANNEL_ID = "wallora-updates"
+const val NOTIFICATION_CHANNEL_NAME = "壁纸更新"
+private const val FOREGROUND_NOTIFICATION_ID = 1001
+
+/** 确保通知渠道已创建（Android 8+ 必须），可从任意 Context 调用，重复调用无副作用。 */
+fun ensureNotificationChannel(context: Context) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (manager.getNotificationChannel(NOTIFICATION_CHANNEL_ID) == null) {
+            val channel = NotificationChannel(
+                NOTIFICATION_CHANNEL_ID,
+                NOTIFICATION_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply { setShowBadge(false) }
+            manager.createNotificationChannel(channel)
         }
-        applyWallpaper(
-          applicationContext,
-          decodeBitmap(imageBytes),
-          WallpaperFitMode.fromWire(config.optString("fit_mode", "Fill")),
-          WallpaperTargets.from(config.optJSONObject("platform")?.optBoolean("set_lock_screen", false) ?: false)
-        )
-        Result.success()
-      }
-    } catch (ex: Exception) {
-      Result.retry()
     }
-  }
 }
 
-data class ScheduledWallpaper(
-  val sourceId: String,
-  val title: String,
-  val publishedDate: String,
-  val imageUrl: String
-) {
-  fun fileName(): String {
-    val safeTitle = title
-      .map { ch -> if (ch.isLetterOrDigit() || ch == '-') ch else '_' }
-      .joinToString("")
-      .trim('_')
-    return "$sourceId-$publishedDate-$safeTitle.jpg"
-  }
+/** 发送壁纸结果通知，由 PlatformApis.postNotification 调用（通知 ID 由 Rust 传入）。 */
+fun postWallpaperNotification(context: Context, title: String, message: String, notificationId: Int) {
+    ensureNotificationChannel(context)
+    val notification = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
+        .setContentTitle(title)
+        .setContentText(message)
+        .setSmallIcon(R.drawable.ic_qs_wallpaper)
+        .setAutoCancel(true)
+        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        .build()
+    val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    manager.notify(notificationId, notification)
 }
 
-fun fetchLatestWallpaper(config: JSONObject): ScheduledWallpaper {
-  val bing = config.getJSONObject("bing")
-  val archiveUrl = bingArchiveUrl(
-    market = bing.optString("market", "UnitedStates"),
-    resolution = bing.optString("resolution", "Standard1920x1080"),
-    count = bing.optInt("count", 1)
-  )
-  // 使用 openStream() 替代已废弃的 URL.readText()
-  val response = JSONObject(URL(archiveUrl).openStream().bufferedReader().use { it.readText() })
-  val image = response.getJSONArray("images").getJSONObject(0)
-  val rawImageUrl = image.getString("url")
-  val imageUrl = if (rawImageUrl.startsWith("http")) rawImageUrl else "https://www.bing.com$rawImageUrl"
-  return ScheduledWallpaper(
-    sourceId = "bing",
-    title = image.optString("title", "wallpaper"),
-    publishedDate = image.optString("startdate", "scheduled"),
-    imageUrl = imageUrl
-  )
-}
+/**
+ * 定时壁纸更新 Worker。
+ * 业务逻辑（Bing 获取、下载重试、DailyAt 时间窗口、存图、通知策略）完全由 Rust 实现。
+ * 此类仅负责：前台进度通知（WorkManager 前台服务）+ 调用 Rust + 返回结果。
+ */
+class ScheduledWallpaperWorker(
+    context: Context,
+    params: WorkerParameters
+) : CoroutineWorker(context, params) {
 
-fun bingArchiveUrl(market: String, resolution: String, count: Int): String {
-  val pairs = mutableListOf(
-    "format" to "js",
-    "idx" to "0",
-    "n" to count.coerceIn(1, 8).toString(),
-    "mkt" to bingMarketQueryValue(market)
-  )
-  if (resolution == "Uhd4k") {
-    pairs += "uhd" to "1"
-    pairs += "uhdwidth" to "3840"
-    pairs += "uhdheight" to "2160"
-  }
-  val query = pairs.joinToString("&") { (key, value) ->
-    "${urlEncode(key)}=${urlEncode(value)}"
-  }
-  return "https://www.bing.com/HPImageArchive.aspx?$query"
-}
+    override suspend fun doWork(): Result {
+        val prefs = applicationContext.getSharedPreferences(SCHEDULE_PREFS_NAME, Context.MODE_PRIVATE)
+        val configJson = prefs.getString(PREF_CONFIG_JSON, null) ?: return Result.failure()
 
-fun bingMarketQueryValue(market: String): String {
-  return when (market) {
-    "China" -> "zh-CN"
-    "Japan" -> "ja-JP"
-    "UnitedKingdom" -> "en-GB"
-    "Germany" -> "de-DE"
-    "France" -> "fr-FR"
-    else -> "en-US"
-  }
-}
+        setForeground(createForegroundInfo("正在更新壁纸…"))
 
-private fun urlEncode(value: String): String {
-  return URLEncoder.encode(value, "UTF-8")
+        return withContext(Dispatchers.IO) {
+            val success = RustCore.fetchAndApplyLatestWallpaper(applicationContext, configJson)
+            if (success) Result.success() else Result.retry()
+        }
+    }
+
+    private fun createForegroundInfo(progress: String): ForegroundInfo {
+        ensureNotificationChannel(applicationContext)
+        val notification = NotificationCompat.Builder(applicationContext, NOTIFICATION_CHANNEL_ID)
+            .setContentTitle("Wallora")
+            .setContentText(progress)
+            .setSmallIcon(R.drawable.ic_qs_wallpaper)
+            .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            ForegroundInfo(FOREGROUND_NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        } else {
+            ForegroundInfo(FOREGROUND_NOTIFICATION_ID, notification)
+        }
+    }
 }

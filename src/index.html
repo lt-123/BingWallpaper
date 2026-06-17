@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Wallora</title>
     <link rel="icon" href="data:," />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
-    />
+    <link rel="stylesheet" href="/assets/pico.min.css" />
     <link rel="stylesheet" href="styles.css" />
     <script type="module" src="/main.js" defer></script>
   </head>
@@ -149,15 +146,48 @@
                 </span>
               </label>
               <label class="setting-row">
+                <span class="setting-label">模式</span>
+                <select id="scheduleMode">
+                  <option value="Interval">按间隔触发</option>
+                  <option value="DailyAt">每日时间点</option>
+                </select>
+              </label>
+              <label class="setting-row" id="rowIntervalMinutes">
                 <span class="setting-label">间隔分钟</span>
                 <input id="intervalMinutes" type="number" min="1" step="1" />
               </label>
+              <div class="setting-row" id="rowDailyTimes" hidden>
+                <span class="setting-label">每日时间点</span>
+                <div class="daily-times-wrapper">
+                  <div id="dailyTimesTags" class="daily-times-tags"></div>
+                  <div class="daily-times-add">
+                    <input id="newDailyTime" type="time" />
+                    <button id="addDailyTime" type="button" class="outline secondary">添加</button>
+                  </div>
+                </div>
+              </div>
               <label class="setting-row">
-                <span class="setting-label">后台更新时提示</span>
+                <span class="setting-label">后台更新时通知</span>
                 <span class="setting-control">
                   <input id="notifyBackground" type="checkbox" role="switch" />
                 </span>
               </label>
+            </div>
+          </fieldset>
+
+          <!-- Battery optimization (Android only, hidden by default) -->
+          <fieldset id="rowBatteryExemption" hidden>
+            <legend>系统权限</legend>
+            <div class="settings-list">
+              <div class="setting-row">
+                <span class="setting-label">电池优化豁免</span>
+                <span class="setting-control battery-exemption-control">
+                  <span id="batteryExemptionStatus" class="setting-value"></span>
+                  <button id="requestBatteryExemption" type="button" class="outline secondary" hidden>
+                    申请豁免
+                  </button>
+                </span>
+              </div>
             </div>
           </fieldset>
 
