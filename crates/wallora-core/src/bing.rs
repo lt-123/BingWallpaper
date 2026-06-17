@@ -30,17 +30,40 @@ impl BingMarket {
 pub enum BingResolution {
     Standard1920x1080,
     Uhd4k,
+    Portrait1080x1920,
 }
 
 impl BingResolution {
     fn query_pairs(self) -> Vec<(String, String)> {
         match self {
-            Self::Standard1920x1080 => Vec::new(),
+            Self::Standard1920x1080 | Self::Portrait1080x1920 => Vec::new(),
             Self::Uhd4k => vec![
                 ("uhd".to_string(), "1".to_string()),
                 ("uhdwidth".to_string(), "3840".to_string()),
                 ("uhdheight".to_string(), "2160".to_string()),
             ],
+        }
+    }
+
+    fn image_url(self, image: &BingImage) -> String {
+        match self {
+            // Portrait is not a distinct Bing API resolution; construct from urlbase
+            // by appending the resolution suffix (same pattern as Bing's own thumbnails).
+            Self::Portrait1080x1920 => {
+                if image.urlbase.starts_with("http") {
+                    format!("{}_1080x1920.jpg", image.urlbase)
+                } else {
+                    format!("https://www.bing.com{}_1080x1920.jpg", image.urlbase)
+                }
+            }
+            // API response already reflects the requested resolution.
+            _ => {
+                if image.url.starts_with("http") {
+                    image.url.clone()
+                } else {
+                    format!("https://www.bing.com{}", image.url)
+                }
+            }
         }
     }
 }
@@ -115,16 +138,11 @@ pub struct BingWallpaperResponse {
 }
 
 impl BingWallpaperResponse {
-    pub fn into_wallpapers(self, _resolution: BingResolution) -> Vec<WallpaperItem> {
+    pub fn into_wallpapers(self, resolution: BingResolution) -> Vec<WallpaperItem> {
         self.images
             .into_iter()
             .map(|image| {
-                let image_url = if image.url.starts_with("http") {
-                    image.url
-                } else {
-                    format!("https://www.bing.com{}", image.url)
-                };
-
+                let image_url = resolution.image_url(&image);
                 WallpaperItem {
                     source_id: "bing".to_string(),
                     source_wallpaper_id: image.urlbase,

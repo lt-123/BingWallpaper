@@ -13,6 +13,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.os.PowerManager
+import android.util.DisplayMetrics
+import android.view.WindowManager
 import android.provider.MediaStore
 import android.provider.Settings
 import app.tauri.annotation.Command
@@ -236,6 +238,19 @@ fun decodeBitmap(imageBytes: ByteArray): Bitmap {
     ?: error("Could not decode wallpaper image")
 }
 
+fun screenDimensions(context: Context): Pair<Int, Int> {
+  val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+  return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+    val bounds = wm.currentWindowMetrics.bounds
+    Pair(bounds.width(), bounds.height())
+  } else {
+    val dm = DisplayMetrics()
+    @Suppress("DEPRECATION")
+    wm.defaultDisplay.getRealMetrics(dm)
+    Pair(dm.widthPixels, dm.heightPixels)
+  }
+}
+
 fun applyWallpaper(
   context: Context,
   bitmap: Bitmap,
@@ -243,7 +258,12 @@ fun applyWallpaper(
   targets: WallpaperTargets
 ) {
   val manager = WallpaperManager.getInstance(context)
-  val targetBitmap = renderForDevice(bitmap, fitMode, manager.desiredMinimumWidth, manager.desiredMinimumHeight)
+  val (screenW, screenH) = screenDimensions(context)
+  // desiredMinimumWidth/Height may be 0 on some devices; fall back to actual screen size
+  // so that landscape images are correctly scaled to portrait screens.
+  val desiredW = manager.desiredMinimumWidth.takeIf { it > 0 } ?: screenW
+  val desiredH = manager.desiredMinimumHeight.takeIf { it > 0 } ?: screenH
+  val targetBitmap = renderForDevice(bitmap, fitMode, desiredW, desiredH)
   // minSdk=24 即 API N，setBitmap(Bitmap) 的废弃版本在此 minSdk 下永远不会执行，直接调用带 flags 的版本
   manager.setBitmap(targetBitmap, null, true, targets.flags())
 }
