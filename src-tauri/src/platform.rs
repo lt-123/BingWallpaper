@@ -1,9 +1,9 @@
 #[cfg(target_os = "android")]
 use serde::{Deserialize, Serialize};
-use tauri::{plugin::TauriPlugin, Manager, Runtime};
+use tauri::{Manager, Runtime, plugin::TauriPlugin};
 
 #[cfg(target_os = "android")]
-use crate::AppConfig;
+use crate::{AppConfig, PlatformConfig};
 
 #[cfg(mobile)]
 use tauri::plugin::PluginHandle;
@@ -13,7 +13,6 @@ const PLUGIN_IDENTIFIER: &str = "xyz.liut.wallora.platform";
 
 #[cfg(target_os = "android")]
 use wallora_core::config::ScheduleMode;
-
 
 #[cfg(target_os = "android")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -25,6 +24,22 @@ pub struct AndroidSchedulePayload {
     pub config_json: String,
     /// "Interval" 或 "DailyAt"，供 Kotlin 插件决定 WorkManager 任务间隔
     pub schedule_mode: String,
+}
+
+#[cfg(target_os = "android")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AndroidPlatformPreferencesPayload {
+    pub exclude_from_recents: bool,
+}
+
+#[cfg(target_os = "android")]
+impl From<PlatformConfig> for AndroidPlatformPreferencesPayload {
+    fn from(config: PlatformConfig) -> Self {
+        Self {
+            exclude_from_recents: config.exclude_from_recents,
+        }
+    }
 }
 
 #[cfg(target_os = "android")]
@@ -46,7 +61,6 @@ impl From<AppConfig> for AndroidSchedulePayload {
     }
 }
 
-
 pub struct PlatformWallpaper<R: Runtime> {
     #[cfg(mobile)]
     mobile_plugin_handle: PluginHandle<R>,
@@ -55,7 +69,6 @@ pub struct PlatformWallpaper<R: Runtime> {
 }
 
 impl<R: Runtime> PlatformWallpaper<R> {
-
     #[cfg(target_os = "android")]
     pub async fn clear_android_wallpaper(&self) -> Result<String, String> {
         let response: AndroidClearWallpaperResponse = self
@@ -87,6 +100,19 @@ impl<R: Runtime> PlatformWallpaper<R> {
             .await
             .map_err(|err| err.to_string())?;
         Ok(response.message)
+    }
+
+    #[cfg(target_os = "android")]
+    pub async fn sync_android_platform_preferences(
+        &self,
+        payload: AndroidPlatformPreferencesPayload,
+    ) -> Result<(), String> {
+        let _: serde_json::Value = self
+            .mobile_plugin_handle
+            .run_mobile_plugin_async("syncPlatformPreferences", payload)
+            .await
+            .map_err(|err| err.to_string())?;
+        Ok(())
     }
 
     /// 查询是否已豁免电池优化（仅 Android）。

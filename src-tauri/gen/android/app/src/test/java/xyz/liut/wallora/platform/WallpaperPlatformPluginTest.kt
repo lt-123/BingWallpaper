@@ -2,6 +2,7 @@ package xyz.liut.wallora.platform
 
 import android.app.WallpaperManager
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class WallpaperPlatformPluginTest {
@@ -32,47 +33,22 @@ class WallpaperPlatformPluginTest {
   }
 
   @Test
-  fun bingArchiveUrlUsesMarketAndUhdParameters() {
-    val url = bingArchiveUrl("China", "Uhd4k", 20)
-
-    assertEquals(
-      "https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=8&mkt=zh-CN&uhd=1&uhdwidth=3840&uhdheight=2160",
-      url
-    )
-  }
-
-  @Test
-  fun parseDailyTimesReturnsEmptyForNull() {
-    val result = parseDailyTimes(null)
-    assertEquals(emptyList<String>(), result)
-  }
-
-  @Test
-  fun parseDailyTimesReturnsTimesFromJsonArray() {
-    val scheduleObj = org.json.JSONObject().apply {
-      put("daily_times", org.json.JSONArray().apply {
-        put("08:00")
-        put("18:30")
-      })
-    }
-    val result = parseDailyTimes(scheduleObj)
-    assertEquals(listOf("08:00", "18:30"), result)
-  }
-
-  @Test
-  fun isWithinAnyTimeWindowReturnsFalseForEmptyList() {
-    assertFalse(isWithinAnyTimeWindow(emptyList()))
-  }
-
-  @Test
-  fun isWithinAnyTimeWindowReturnsFalseForMalformedEntry() {
-    assertFalse(isWithinAnyTimeWindow(listOf("not-a-time")))
-  }
-
-  @Test
   fun scheduleModeDailyAtUsesMinimumWorkInterval() {
     // DailyAt 模式下 WorkManager 周期应使用最小间隔（15 分钟）
     val interval = MIN_PERIODIC_INTERVAL_MINUTES
     assertEquals(15L, interval)
+  }
+
+  @Test
+  fun platformPreferencesUseStableStorageKeys() {
+    assertEquals("wallora-platform", PLATFORM_PREFS_NAME)
+    assertEquals("excludeFromRecents", PREF_EXCLUDE_FROM_RECENTS)
+  }
+
+  @Test
+  fun syncPlatformPreferencesDefaultsToKeepingTaskInRecents() {
+    val args = SyncPlatformPreferencesArgs()
+
+    assertFalse(args.excludeFromRecents)
   }
 }

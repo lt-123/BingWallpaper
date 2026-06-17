@@ -7,6 +7,8 @@ import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.core.app.ActivityCompat
 import xyz.liut.wallora.platform.ensureNotificationChannel
+import xyz.liut.wallora.platform.PLATFORM_PREFS_NAME
+import xyz.liut.wallora.platform.PREF_EXCLUDE_FROM_RECENTS
 
 class MainActivity : TauriActivity() {
     override val handleBackNavigation: Boolean = true
@@ -16,6 +18,18 @@ class MainActivity : TauriActivity() {
         super.onCreate(savedInstanceState)
         ensureNotificationChannel(this)
         requestNotificationPermissionIfNeeded()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations && shouldExcludeFromRecents()) {
+            finishAndRemoveTask()
+        }
+    }
+
+    private fun shouldExcludeFromRecents(): Boolean {
+        return getSharedPreferences(PLATFORM_PREFS_NAME, MODE_PRIVATE)
+            .getBoolean(PREF_EXCLUDE_FROM_RECENTS, false)
     }
 
     private fun requestNotificationPermissionIfNeeded() {

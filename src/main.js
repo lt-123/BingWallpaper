@@ -50,6 +50,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   state.config = loadStoredConfig() ?? (await invoke("default_config"));
   writeConfigToForm(elements, state.config);
   await syncPlatformCapabilities();
+  await syncPlatformPreferences();
   syncViewFromHash();
   await loadGallery({ reset: true });
   await syncSchedule();
@@ -65,6 +66,8 @@ function bindElements() {
     "resolution",
     "rowFitMode",
     "fitMode",
+    "rowSetLockScreen",
+    "rowExcludeFromRecents",
     "scheduleEnabled",
     "scheduleMode",
     "rowIntervalMinutes",
@@ -76,6 +79,7 @@ function bindElements() {
     "notifyBackground",
     "saveToFileSystem",
     "setLockScreen",
+    "excludeFromRecents",
     "rowBatteryExemption",
     "batteryExemptionStatus",
     "requestBatteryExemption",
@@ -109,6 +113,7 @@ function bindEvents() {
     renderPreview();
     // scheduleMode 切换时同步显示/隐藏对应配置行
     updateScheduleModeVisibility(elements);
+    void syncPlatformPreferences();
     void syncSchedule();
 
     // 仅 Bing 源参数（market / resolution）变化时才重置并重载画廊
@@ -193,13 +198,25 @@ async function syncPlatformCapabilities() {
     const capabilities = await invoke("platform_capabilities");
     elements.clearWallpaper.hidden = !capabilities.can_clear_wallpaper;
     elements.rowFitMode.hidden = !capabilities.supports_fit_mode;
+    elements.rowSetLockScreen.hidden = !capabilities.supports_lock_screen_wallpaper;
+    elements.rowExcludeFromRecents.hidden = !capabilities.has_exclude_from_recents;
     elements.rowBatteryExemption.hidden = !capabilities.has_battery_optimization;
     if (capabilities.has_battery_optimization) {
       await syncBatteryExemptionStatus();
     }
   } catch {
     elements.clearWallpaper.hidden = true;
+    elements.rowSetLockScreen.hidden = true;
+    elements.rowExcludeFromRecents.hidden = true;
     elements.rowBatteryExemption.hidden = true;
+  }
+}
+
+async function syncPlatformPreferences() {
+  try {
+    await invoke("sync_platform_preferences", { config: state.config.platform });
+  } catch {
+    // 非 Android 或旧运行时不支持时忽略；配置仍会保存在 localStorage。
   }
 }
 
@@ -462,16 +479,28 @@ async function mockInvoke(command, args = {}) {
         notify_on_background_update: true,
       },
       save_to_file_system: true,
-      platform: { set_lock_screen: false, notify_on_manual_update: true },
+      platform: {
+        set_lock_screen: false,
+        exclude_from_recents: false,
+      },
     };
   }
   if (command === "platform_capabilities") {
-    return { can_clear_wallpaper: false, has_battery_optimization: false, supports_fit_mode: true };
+    return {
+      can_clear_wallpaper: false,
+      supports_lock_screen_wallpaper: false,
+      has_battery_optimization: false,
+      supports_fit_mode: false,
+      has_exclude_from_recents: false,
+    };
   }
   if (command === "check_battery_exemption") {
     return true;
   }
   if (command === "request_battery_exemption") {
+    return null;
+  }
+  if (command === "sync_platform_preferences") {
     return null;
   }
   if (command === "fetch_bing_gallery") {

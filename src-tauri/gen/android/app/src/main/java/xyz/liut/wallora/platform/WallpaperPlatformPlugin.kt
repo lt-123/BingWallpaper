@@ -34,11 +34,17 @@ const val SCHEDULE_WORK_NAME = "wallora-schedule"
 /** SharedPreferences 文件名，用于在 Worker 和 Plugin 之间持久化调度配置。 */
 const val SCHEDULE_PREFS_NAME = "wallora-schedule"
 
+/** SharedPreferences 文件名，用于保存 Android 平台偏好。 */
+const val PLATFORM_PREFS_NAME = "wallora-platform"
+
 /** SharedPreferences 键：存储序列化的 AppConfig JSON，Worker 启动时读取。 */
 const val PREF_CONFIG_JSON = "configJson"
 
 /** SharedPreferences 键：是否在后台更新完成后发送通知。 */
 const val PREF_NOTIFY_BACKGROUND = "notifyBackground"
+
+/** SharedPreferences 键：进入后台时是否从最近任务列表移除。 */
+const val PREF_EXCLUDE_FROM_RECENTS = "excludeFromRecents"
 
 /**
  * WorkManager 周期任务的最小触发间隔（分钟）。
@@ -54,6 +60,12 @@ class ConfigureScheduleArgs {
   var notifyOnBackgroundUpdate: Boolean = true
   lateinit var configJson: String
   var scheduleMode: String = "Interval"
+}
+
+/** Rust 侧同步的 Android 平台偏好。 */
+@InvokeArg
+class SyncPlatformPreferencesArgs {
+  var excludeFromRecents: Boolean = false
 }
 
 /**
@@ -96,6 +108,7 @@ data class WallpaperTargets(val home: Boolean, val lock: Boolean) {
  * - [cancelSchedule]：取消定时任务
  * - [checkBatteryOptimization]：查询电池优化豁免状态
  * - [requestBatteryExemption]：跳转系统设置申请豁免
+ * - [syncPlatformPreferences]：持久化 Android 平台偏好
  */
 @TauriPlugin
 class WallpaperPlatformPlugin(private val activity: Activity) : Plugin(activity) {
@@ -227,6 +240,27 @@ class WallpaperPlatformPlugin(private val activity: Activity) : Plugin(activity)
       }
     }
     invoke.resolve(JSObject())
+  }
+
+  /**
+   * 同步 Android 平台偏好。
+   *
+   * [PREF_EXCLUDE_FROM_RECENTS] 由 [xyz.liut.wallora.MainActivity] 在进入后台时读取；
+   * 打开后 Activity 会调用 finishAndRemoveTask()，让系统最近任务列表不再显示本任务。
+   */
+  @Command
+  fun syncPlatformPreferences(invoke: Invoke) {
+    try {
+      val args = invoke.parseArgs(SyncPlatformPreferencesArgs::class.java)
+      activity
+        .getSharedPreferences(PLATFORM_PREFS_NAME, Context.MODE_PRIVATE)
+        .edit()
+        .putBoolean(PREF_EXCLUDE_FROM_RECENTS, args.excludeFromRecents)
+        .apply()
+      invoke.resolve(JSObject())
+    } catch (ex: Exception) {
+      invoke.reject(ex.message ?: ex.toString())
+    }
   }
 
   /**

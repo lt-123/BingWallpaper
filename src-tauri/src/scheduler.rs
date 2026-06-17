@@ -61,7 +61,7 @@ impl SchedulerState {
                     Err(mpsc::RecvTimeoutError::Timeout) => {
                         let config = config.clone();
                         tauri::async_runtime::block_on(async move {
-                            if let Err(err) = crate::run_desktop_manual_update(config).await {
+                            if let Err(err) = crate::run_desktop_scheduled_update(config).await {
                                 eprintln!("Scheduled wallpaper update failed: {err}");
                             }
                         });

@@ -14,12 +14,12 @@ use wallora_core::{
     wallpaper::WallpaperItem,
 };
 
+#[cfg(target_os = "android")]
+mod android_jni;
 mod platform;
 mod scheduler;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 mod tray;
-#[cfg(target_os = "android")]
-mod android_jni;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
@@ -44,15 +44,17 @@ impl Default for AppConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlatformConfig {
+    /// Android 可选：同时设置锁屏壁纸。非 Android 当前通过 capability 隐藏。
     pub set_lock_screen: bool,
-    pub notify_on_manual_update: bool,
+    /// Android 可选：应用进入后台时从系统最近任务列表移除。非 Android 无等价能力。
+    pub exclude_from_recents: bool,
 }
 
 impl Default for PlatformConfig {
     fn default() -> Self {
         Self {
             set_lock_screen: false,
-            notify_on_manual_update: true,
+            exclude_from_recents: false,
         }
     }
 }
@@ -69,10 +71,14 @@ pub struct UpdateResult {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlatformCapabilities {
     pub can_clear_wallpaper: bool,
+    /// 仅 Android 当前实现了锁屏壁纸设置
+    pub supports_lock_screen_wallpaper: bool,
     /// Android 设备可能受电池优化影响后台任务，此为 true 时显示豁免引导
     pub has_battery_optimization: bool,
     /// Android 使用固定裁剪逻辑，不支持用户选择装配模式
     pub supports_fit_mode: bool,
+    /// Android 可在进入后台时把任务从系统最近任务列表移除
+    pub has_exclude_from_recents: bool,
 }
 
 /// 向前端返回默认应用配置，用于首次运行或 localStorage 无缓存时的初始化。
@@ -86,8 +92,10 @@ fn default_config() -> AppConfig {
 fn platform_capabilities() -> PlatformCapabilities {
     PlatformCapabilities {
         can_clear_wallpaper: cfg!(target_os = "android"),
+        supports_lock_screen_wallpaper: cfg!(target_os = "android"),
         has_battery_optimization: cfg!(target_os = "android"),
-        supports_fit_mode: !cfg!(target_os = "android"),
+        supports_fit_mode: false,
+        has_exclude_from_recents: cfg!(target_os = "android"),
     }
 }
 
@@ -153,6 +161,51 @@ pub(crate) async fn run_desktop_manual_update(config: AppConfig) -> Result<Updat
     let bytes = download_wallpaper_bytes(&wallpaper).await?;
     apply_downloaded_wallpaper_desktop(wallpaper, config, bytes)
 }
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+pub(crate) async fn run_desktop_scheduled_update(config: AppConfig) -> Result<UpdateResult, String> {
+    let should_notify = should_notify_desktop_background_update(&config);
+    match run_desktop_manual_update(config).await {
+        Ok(result) => {
+            if should_notify {
+                notify_desktop_background_update("壁纸已更新", &result.wallpaper.title);
+            }
+            Ok(result)
+        }
+        Err(err) => {
+            if should_notify {
+                notify_desktop_background_update("壁纸更新失败", &err);
+            }
+            Err(err)
+        }
+    }
+}
+
+/// 判断桌面后台调度完成后是否发送系统通知。
+///
+/// 当前决策：通知开关只对应后台自动更新；手动应用壁纸由前端状态栏反馈，
+/// 不再保留单独的 hidden manual-notification 配置。
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+fn should_notify_desktop_background_update(config: &AppConfig) -> bool {
+    config.schedule.notify_on_background_update
+}
+
+/// 发送桌面后台更新结果通知。
+///
+/// Linux 优先使用常见的 `notify-send` 命令，命令不存在时静默跳过，
+/// 避免为了一个可选反馈引入额外运行时依赖。
+#[cfg(target_os = "linux")]
+fn notify_desktop_background_update(title: &str, body: &str) {
+    if command_exists("notify-send") {
+        let _ = Command::new("notify-send")
+            .arg("Wallora")
+            .arg(format!("{title}: {body}"))
+            .status();
+    }
+}
+
+#[cfg(all(not(target_os = "linux"), not(any(target_os = "android", target_os = "ios"))))]
+fn notify_desktop_background_update(_title: &str, _body: &str) {}
 
 #[tauri::command]
 async fn configure_schedule<R: Runtime>(
@@ -275,7 +328,9 @@ async fn platform_apply_wallpaper<R: Runtime>(
             &wallpaper_ref.download_file_name(),
             &wallpaper_ref.title,
             &config,
-            config.platform.notify_on_manual_update,
+            // 当前决策：手动应用壁纸只通过前端状态栏反馈，不发系统通知；
+            // 后台自动更新通知由 schedule.notify_on_background_update 控制。
+            false,
         )
     })
     .await
@@ -314,12 +369,17 @@ pub(crate) async fn download_bytes_by_url(url: &str) -> Result<Vec<u8>, String> 
             Err(err) => {
                 last_err = err;
                 if attempt + 1 < MAX_RETRIES {
-                    eprintln!("Download attempt {}/{MAX_RETRIES} failed, retrying…", attempt + 1);
+                    eprintln!(
+                        "Download attempt {}/{MAX_RETRIES} failed, retrying…",
+                        attempt + 1
+                    );
                 }
             }
         }
     }
-    Err(format!("Download failed after {MAX_RETRIES} attempts: {last_err}"))
+    Err(format!(
+        "Download failed after {MAX_RETRIES} attempts: {last_err}"
+    ))
 }
 
 async fn try_download_once(url: &str) -> Result<Vec<u8>, String> {
@@ -426,7 +486,11 @@ fn set_system_wallpaper(path: &PathBuf, _fit_mode: FitMode) -> Result<(), String
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 fn is_kde_desktop() -> bool {
     std::env::var("XDG_CURRENT_DESKTOP")
-        .map(|desktop| desktop.split(':').any(|part| part.eq_ignore_ascii_case("KDE")))
+        .map(|desktop| {
+            desktop
+                .split(':')
+                .any(|part| part.eq_ignore_ascii_case("KDE"))
+        })
         .unwrap_or(false)
 }
 
@@ -499,6 +563,34 @@ async fn request_platform_battery_exemption<R: Runtime>(_app: AppHandle<R>) -> R
     Ok(())
 }
 
+#[tauri::command]
+async fn sync_platform_preferences<R: Runtime>(
+    app: AppHandle<R>,
+    config: PlatformConfig,
+) -> Result<(), String> {
+    sync_platform_preferences_impl(app, config).await
+}
+
+#[cfg(target_os = "android")]
+async fn sync_platform_preferences_impl<R: Runtime>(
+    app: AppHandle<R>,
+    config: PlatformConfig,
+) -> Result<(), String> {
+    app.state::<platform::PlatformWallpaper<R>>()
+        .sync_android_platform_preferences(platform::AndroidPlatformPreferencesPayload::from(
+            config,
+        ))
+        .await
+}
+
+#[cfg(not(target_os = "android"))]
+async fn sync_platform_preferences_impl<R: Runtime>(
+    _app: AppHandle<R>,
+    _config: PlatformConfig,
+) -> Result<(), String> {
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -525,8 +617,42 @@ pub fn run() {
             cancel_schedule,
             schedule_status,
             check_battery_exemption,
-            request_battery_exemption
+            request_battery_exemption,
+            sync_platform_preferences
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[cfg(not(target_os = "android"))]
+    fn non_android_capabilities_hide_unimplemented_wallpaper_options() {
+        let capabilities = platform_capabilities();
+
+        assert!(!capabilities.supports_fit_mode);
+        assert!(!capabilities.supports_lock_screen_wallpaper);
+    }
+
+    #[test]
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    fn desktop_background_notification_follows_schedule_preference() {
+        let mut config = AppConfig::default();
+        config.schedule.notify_on_background_update = false;
+        assert!(!should_notify_desktop_background_update(&config));
+
+        config.schedule.notify_on_background_update = true;
+        assert!(should_notify_desktop_background_update(&config));
+    }
+
+    #[test]
+    fn platform_config_does_not_expose_manual_update_notification() {
+        let config = PlatformConfig::default();
+        let json = serde_json::to_value(config).unwrap();
+
+        assert!(json.get("notify_on_manual_update").is_none());
+    }
 }

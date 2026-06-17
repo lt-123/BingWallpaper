@@ -127,10 +127,16 @@
                   <input id="saveToFileSystem" type="checkbox" role="switch" />
                 </span>
               </label>
-              <label class="setting-row">
+              <label id="rowSetLockScreen" class="setting-row" hidden>
                 <span class="setting-label">同时设置锁屏壁纸</span>
                 <span class="setting-control">
                   <input id="setLockScreen" type="checkbox" role="switch" />
+                </span>
+              </label>
+              <label id="rowExcludeFromRecents" class="setting-row" hidden>
+                <span class="setting-label">从最近任务列表中删除</span>
+                <span class="setting-control">
+                  <input id="excludeFromRecents" type="checkbox" role="switch" />
                 </span>
               </label>
             </div>

@@ -54,6 +54,7 @@ export function writeConfigToForm(elements, config) {
     config.schedule.notify_on_background_update;
   elements.saveToFileSystem.checked = config.save_to_file_system;
   elements.setLockScreen.checked = config.platform.set_lock_screen;
+  elements.excludeFromRecents.checked = config.platform.exclude_from_recents ?? false;
 }
 
 /**
@@ -103,27 +104,13 @@ export function renderDailyTimesTags(container, times) {
  * count 固定为 BING_PAGE_SIZE：画廊分页尺寸不对用户开放配置，
  * 避免与 loadGallery 的分页逻辑不一致。
  *
- * notify_on_manual_update 暂无对应 UI 控件，固定为 true（手动应用时始终触发通知）。
- * 若未来需要可配置，在 index.html 添加对应开关后修改此处。
+ * 当前决策：手动应用壁纸只在界面状态栏反馈，不再保留
+ * notify_on_manual_update 这类隐藏配置字段。
  *
  * @param {Record<string, HTMLElement>} elements 通过 bindElements 填充的 DOM 元素映射
  * @returns {object} 完整的 AppConfig 对象
  */
-/**
- * 从表单控件读取当前用户输入，构造完整的 AppConfig 对象。
- *
- * count 固定为 BING_PAGE_SIZE：画廊分页尺寸不对用户开放配置，
- * 避免与 loadGallery 的分页逻辑不一致。
- *
- * notify_on_manual_update 暂无对应 UI 控件，从 previousConfig 继承原值，
- * 首次使用时默认 true（手动应用时触发通知）。
- * 若未来需要可配置，在 index.html 添加对应开关后修改此处。
- *
- * @param {Record<string, HTMLElement>} elements 通过 bindElements 填充的 DOM 元素映射
- * @param {object|null} previousConfig 当前 state.config，用于保留无 UI 控件的字段值
- * @returns {object} 完整的 AppConfig 对象
- */
-export function readConfigFromForm(elements, previousConfig = null) {
+export function readConfigFromForm(elements) {
   return {
     bing: {
       market: elements.market.value,
@@ -141,7 +128,7 @@ export function readConfigFromForm(elements, previousConfig = null) {
     save_to_file_system: elements.saveToFileSystem.checked,
     platform: {
       set_lock_screen: elements.setLockScreen.checked,
-      notify_on_manual_update: previousConfig?.platform?.notify_on_manual_update ?? true,
+      exclude_from_recents: elements.excludeFromRecents.checked,
     },
   };
 }
