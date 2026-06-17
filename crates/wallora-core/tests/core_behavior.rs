@@ -82,6 +82,14 @@ fn bing_response_maps_gallery_items_to_absolute_wallpapers() {
     assert_eq!(wallpapers[0].title, "Example place");
     assert_eq!(wallpapers[0].published_date, "20260615");
     assert_eq!(
+        wallpapers[0].thumbnail_url,
+        "https://www.bing.com/th?id=OHR.Example_EN-US1234567890_1366x768.jpg"
+    );
+    assert_eq!(
+        wallpapers[0].preview_url,
+        "https://www.bing.com/th?id=OHR.Example_EN-US1234567890_1920x1080.jpg"
+    );
+    assert_eq!(
         wallpapers[0].image_url,
         "https://www.bing.com/th?id=OHR.Example_EN-US1234567890_UHD.jpg"
     );

@@ -7,6 +7,11 @@ pub struct WallpaperItem {
     pub title: String,
     pub description: String,
     pub published_date: String,
+    /// 画廊小卡片缩略图（低分辨率，节省带宽）
+    pub thumbnail_url: String,
+    /// 预览区大图（中等分辨率，足够清晰）
+    pub preview_url: String,
+    /// 应用/下载时使用的完整分辨率图片
     pub image_url: String,
     pub detail_url: Option<String>,
 }

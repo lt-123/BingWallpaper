@@ -49,13 +49,7 @@ impl BingResolution {
         match self {
             // Portrait is not a distinct Bing API resolution; construct from urlbase
             // by appending the resolution suffix (same pattern as Bing's own thumbnails).
-            Self::Portrait1080x1920 => {
-                if image.urlbase.starts_with("http") {
-                    format!("{}_1080x1920.jpg", image.urlbase)
-                } else {
-                    format!("https://www.bing.com{}_1080x1920.jpg", image.urlbase)
-                }
-            }
+            Self::Portrait1080x1920 => urlbase_url(&image.urlbase, "_1080x1920.jpg"),
             // API response already reflects the requested resolution.
             _ => {
                 if image.url.starts_with("http") {
@@ -65,6 +59,15 @@ impl BingResolution {
                 }
             }
         }
+    }
+}
+
+/// 将 Bing urlbase（可能为相对路径或绝对 URL）与分辨率后缀拼成完整 URL。
+fn urlbase_url(urlbase: &str, suffix: &str) -> String {
+    if urlbase.starts_with("http") {
+        format!("{}{}", urlbase, suffix)
+    } else {
+        format!("https://www.bing.com{}{}", urlbase, suffix)
     }
 }
 
@@ -143,12 +146,16 @@ impl BingWallpaperResponse {
             .into_iter()
             .map(|image| {
                 let image_url = resolution.image_url(&image);
+                let thumbnail_url = urlbase_url(&image.urlbase, "_1366x768.jpg");
+                let preview_url = urlbase_url(&image.urlbase, "_1920x1080.jpg");
                 WallpaperItem {
                     source_id: "bing".to_string(),
                     source_wallpaper_id: image.urlbase,
                     title: image.title,
                     description: image.copyright,
                     published_date: image.startdate,
+                    thumbnail_url,
+                    preview_url,
                     image_url,
                     detail_url: image.copyrightlink,
                 }

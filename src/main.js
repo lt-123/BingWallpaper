@@ -361,7 +361,7 @@ function renderGallery() {
     card.type = "button";
     card.className = "gallery-item";
     card.setAttribute("aria-pressed", String(wallpaper === state.selected));
-    image.src = wallpaper.image_url;
+    image.src = wallpaper.thumbnail_url;
     image.alt = wallpaper.title;
     image.loading = "lazy";
     title.textContent = wallpaper.title;
@@ -394,7 +394,7 @@ function renderPreview() {
   const existingImg = elements.preview.querySelector("img");
 
   // 同一张图片仅更新 objectFit，保留正在加载的网络请求
-  if (existingImg && existingImg.src === state.selected.image_url) {
+  if (existingImg && existingImg.src === state.selected.preview_url) {
     existingImg.style.objectFit = objectFit;
     return;
   }
@@ -405,7 +405,7 @@ function renderPreview() {
   const description = document.createElement("p");
   const publishedDate = document.createElement("small");
 
-  image.src = state.selected.image_url;
+  image.src = state.selected.preview_url;
   image.alt = state.selected.title;
   image.style.objectFit = objectFit;
   title.textContent = state.selected.title;
@@ -487,6 +487,8 @@ async function mockInvoke(command, args = {}) {
         title: `Preview ${itemNumber}`,
         description: "Run inside Tauri to load live Bing wallpapers.",
         published_date: `202606${String(16 - itemNumber).padStart(2, "0")}`,
+        thumbnail_url: MOCK_IMAGE_URL,
+        preview_url: MOCK_IMAGE_URL,
         image_url: MOCK_IMAGE_URL,
         detail_url: null,
       };
