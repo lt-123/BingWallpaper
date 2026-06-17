@@ -168,7 +168,6 @@ pub fn apply_bytes_via_jni(
         env,
         context,
         bytes,
-        config.fit_mode,
         config.platform.set_lock_screen,
     )?;
     if show_notification {
@@ -204,22 +203,17 @@ fn jni_set_wallpaper(
     env: &mut JNIEnv,
     context: &JObject,
     bytes: &[u8],
-    fit_mode: wallora_core::config::FitMode,
     set_lock_screen: bool,
 ) -> Result<(), String> {
     let class = platform_apis_class()?;
     let j_bytes = env.byte_array_from_slice(bytes).map_err(|e| e.to_string())?;
-    let j_fit_mode = env
-        .new_string(fit_mode.as_str())
-        .map_err(|e| e.to_string())?;
     env.call_static_method(
         class,
         "setWallpaper",
-        "(Landroid/content/Context;[BLjava/lang/String;Z)V",
+        "(Landroid/content/Context;[BZ)V",
         &[
             JValue::from(context),
             JValue::from(&j_bytes),
-            JValue::from(&j_fit_mode),
             JValue::Bool(set_lock_screen as u8),
         ],
     )

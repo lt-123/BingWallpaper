@@ -16,19 +16,8 @@ object PlatformApis {
 
     /** 将图片设置为系统壁纸。 */
     @JvmStatic
-    fun setWallpaper(
-        context: Context,
-        imageBytes: ByteArray,
-        fitMode: String,
-        setLockScreen: Boolean
-    ) {
-        val bitmap = decodeBitmap(imageBytes)
-        applyWallpaper(
-            context,
-            bitmap,
-            WallpaperFitMode.fromWire(fitMode),
-            WallpaperTargets.from(setLockScreen)
-        )
+    fun setWallpaper(context: Context, imageBytes: ByteArray, setLockScreen: Boolean) {
+        applyWallpaper(context, imageBytes, WallpaperTargets.from(setLockScreen))
     }
 
     /** 发送系统通知。 */

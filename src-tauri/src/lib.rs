@@ -71,6 +71,8 @@ pub struct PlatformCapabilities {
     pub can_clear_wallpaper: bool,
     /// Android 设备可能受电池优化影响后台任务，此为 true 时显示豁免引导
     pub has_battery_optimization: bool,
+    /// Android 使用固定裁剪逻辑，不支持用户选择装配模式
+    pub supports_fit_mode: bool,
 }
 
 /// 向前端返回默认应用配置，用于首次运行或 localStorage 无缓存时的初始化。
@@ -85,6 +87,7 @@ fn platform_capabilities() -> PlatformCapabilities {
     PlatformCapabilities {
         can_clear_wallpaper: cfg!(target_os = "android"),
         has_battery_optimization: cfg!(target_os = "android"),
+        supports_fit_mode: !cfg!(target_os = "android"),
     }
 }
 

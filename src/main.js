@@ -63,6 +63,7 @@ function bindElements() {
     "aboutView",
     "market",
     "resolution",
+    "rowFitMode",
     "fitMode",
     "scheduleEnabled",
     "scheduleMode",
@@ -191,6 +192,7 @@ async function syncPlatformCapabilities() {
   try {
     const capabilities = await invoke("platform_capabilities");
     elements.clearWallpaper.hidden = !capabilities.can_clear_wallpaper;
+    elements.rowFitMode.hidden = !capabilities.supports_fit_mode;
     elements.rowBatteryExemption.hidden = !capabilities.has_battery_optimization;
     if (capabilities.has_battery_optimization) {
       await syncBatteryExemptionStatus();
@@ -464,7 +466,7 @@ async function mockInvoke(command, args = {}) {
     };
   }
   if (command === "platform_capabilities") {
-    return { can_clear_wallpaper: false, has_battery_optimization: false };
+    return { can_clear_wallpaper: false, has_battery_optimization: false, supports_fit_mode: true };
   }
   if (command === "check_battery_exemption") {
     return true;

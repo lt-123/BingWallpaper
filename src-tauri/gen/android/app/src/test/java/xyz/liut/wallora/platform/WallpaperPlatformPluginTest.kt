@@ -20,14 +20,6 @@ class WallpaperPlatformPluginTest {
   }
 
   @Test
-  fun fitModeParsesWireValues() {
-    assertEquals(WallpaperFitMode.FILL, WallpaperFitMode.fromWire("Fill"))
-    assertEquals(WallpaperFitMode.FIT, WallpaperFitMode.fromWire("Fit"))
-    assertEquals(WallpaperFitMode.STRETCH, WallpaperFitMode.fromWire("Stretch"))
-    assertEquals(WallpaperFitMode.CENTER, WallpaperFitMode.fromWire("Center"))
-  }
-
-  @Test
   fun workManagerIntervalIsClampedToPlatformMinimum() {
     assertEquals(15L, normalizedWorkIntervalMinutes(1))
     assertEquals(15L, normalizedWorkIntervalMinutes(15))
