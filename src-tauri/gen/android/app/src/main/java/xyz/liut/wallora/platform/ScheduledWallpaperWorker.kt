@@ -5,6 +5,8 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.ServiceInfo
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
@@ -16,6 +18,7 @@ import xyz.liut.wallora.R
 const val NOTIFICATION_CHANNEL_ID = "wallora-updates"
 const val NOTIFICATION_CHANNEL_NAME = "壁纸更新"
 private const val FOREGROUND_NOTIFICATION_ID = 1001
+private const val RESULT_NOTIFICATION_AUTO_CANCEL_MS = 5_000L
 
 /** 确保通知渠道已创建（Android 8+ 必须），可从任意 Context 调用，重复调用无副作用。 */
 fun ensureNotificationChannel(context: Context) {
@@ -25,7 +28,7 @@ fun ensureNotificationChannel(context: Context) {
             val channel = NotificationChannel(
                 NOTIFICATION_CHANNEL_ID,
                 NOTIFICATION_CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_LOW
             ).apply { setShowBadge(false) }
             manager.createNotificationChannel(channel)
         }
@@ -40,10 +43,14 @@ fun postWallpaperNotification(context: Context, title: String, message: String, 
         .setContentText(message)
         .setSmallIcon(R.drawable.ic_qs_wallpaper)
         .setAutoCancel(true)
-        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        .setPriority(NotificationCompat.PRIORITY_LOW)
         .build()
     val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     manager.notify(notificationId, notification)
+    // 结果通知无需用户主动关闭，5 秒后自动撤销
+    Handler(Looper.getMainLooper()).postDelayed({
+        manager.cancel(notificationId)
+    }, RESULT_NOTIFICATION_AUTO_CANCEL_MS)
 }
 
 /**
