@@ -1,27 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Wallora icon">
-  <defs>
-    <linearGradient id="bg" x1="160" y1="80" x2="860" y2="920" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#2f8fb7" />
-      <stop offset="0.48" stop-color="#47b1a1" />
-      <stop offset="1" stop-color="#f1b84b" />
-    </linearGradient>
-    <linearGradient id="sky" x1="280" y1="220" x2="720" y2="740" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#eaf7ff" />
-      <stop offset="0.56" stop-color="#89d1d3" />
-      <stop offset="1" stop-color="#2f6b64" />
-    </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="28" stdDeviation="34" flood-color="#163a3d" flood-opacity="0.25" />
-    </filter>
-  </defs>
-  <rect x="64" y="64" width="896" height="896" rx="224" fill="url(#bg)" />
-  <path d="M230 802c168 82 398 86 568 4 73-35 112-91 99-137-16-56-93-58-174-44-119 20-214 5-313-62-81-55-168-72-244-39-74 32-109 95-99 158 8 52 62 94 163 120z" fill="#164e55" opacity="0.18" />
-  <g filter="url(#shadow)">
-    <rect x="238" y="174" width="548" height="676" rx="116" fill="#f8fbff" />
-    <rect x="288" y="224" width="448" height="576" rx="82" fill="url(#sky)" />
-    <circle cx="626" cy="356" r="64" fill="#f8c75a" />
-    <path d="M288 620c83-68 146-92 223-42 62 41 104 37 164-13 26-22 46-33 61-38v273H288z" fill="#1e746a" />
-    <path d="M288 690c80-48 147-58 230-18 78 37 143 33 218-18v146H288z" fill="#174d4f" />
-    <path d="M634 247l23 45 50 8-36 36 8 50-45-23-45 23 8-50-36-36 50-8z" fill="#ffffff" opacity="0.92" />
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" role="img"
+    aria-label="Wallora adaptive icon background">
+    <defs>
+        <linearGradient id="spring-bg" x1="15" y1="12" x2="93" y2="94"
+            gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#F6FBD1" />
+            <stop offset="0.52" stop-color="#B7E99E" />
+            <stop offset="1" stop-color="#7EC8A5" />
+        </linearGradient>
+    </defs>
+    <rect width="108" height="108" fill="url(#spring-bg)" />
+    <g transform="translate(3 1.5)">
+        <path fill="#0D7A65" fill-rule="evenodd" clip-rule="evenodd" d="
+        M42 25
+        c12 -5 28 2 35 14
+        c7 13 3 29 -8 38
+        c-11 10 -28 12 -39 3
+        c-10 -8 -9 -24 -4 -35
+        c3 -8 8 -16 16 -20
+        Z
+
+        M50 39
+        c8 -3 18 2 22 10
+        c4 9 0 19 -8 24
+        c-8 6 -20 6 -26 -1
+        c-6 -6 -4 -17 1 -24
+        c3 -4 6 -7 11 -9
+        Z" />
+        <path fill="#0D7A65" d="
+        M59 50
+        c5 -1 10 2 12 7
+        c2 6 -1 12 -6 15
+        c-5 3 -13 2 -16 -3
+        c-3 -5 -1 -12 3 -15
+        c2 -2 4 -3 7 -4
+        Z" />
+    </g>
 </svg>

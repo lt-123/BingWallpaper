@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" role="img" aria-label="Wallora adaptive icon background">
+  <defs>
+    <linearGradient id="spring-bg" x1="15" y1="12" x2="93" y2="94" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F6FBD1" />
+      <stop offset="0.52" stop-color="#B7E99E" />
+      <stop offset="1" stop-color="#7EC8A5" />
+    </linearGradient>
+  </defs>
+  <rect width="108" height="108" fill="url(#spring-bg)" />
+</svg>
