@@ -10,7 +10,6 @@ import android.graphics.BitmapFactory
 import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
-import android.os.Environment
 import android.os.PowerManager
 import android.util.DisplayMetrics
 import android.view.WindowManager
@@ -26,6 +25,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import java.io.ByteArrayInputStream
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 /** WorkManager 唯一任务名，用于 enqueue 和 cancel 时定位同一个定时任务。 */
@@ -45,6 +45,17 @@ const val PREF_NOTIFY_BACKGROUND = "notifyBackground"
 
 /** SharedPreferences 键：进入后台时是否从最近任务列表移除。 */
 const val PREF_EXCLUDE_FROM_RECENTS = "excludeFromRecents"
+
+/** Android 媒体库中的 Wallora 图片相对目录。 */
+const val WALLORA_PICTURES_RELATIVE_PATH = "Pictures/Wallora"
+
+/**
+ * Android 最低支持版本。
+ *
+ * API 29 提供 MediaStore.RELATIVE_PATH 和 IS_PENDING，使 Wallora 可以稳定地
+ * 在 Pictures/Wallora 中查询、复用并写入图片，而不需要兼容旧式外部存储路径。
+ */
+const val WALLORA_MIN_SDK = 29
 
 /**
  * WorkManager 周期任务的最小触发间隔（分钟）。
@@ -289,45 +300,75 @@ fun scheduleResult(message: String): JSObject {
   return result
 }
 
+/** MediaStore 查询条件，用于判断 Wallora 相册目录下是否已有同名图片。 */
+data class GalleryImageLookup(val selection: String, val selectionArgs: Array<String>)
+
+/** 返回 Android 媒体库中的 Wallora 图片相对目录。 */
+fun walloraPicturesRelativePath(): String = WALLORA_PICTURES_RELATIVE_PATH
+
+/** 构造同名图片查询条件；Android Q+ 的 RELATIVE_PATH 查询值需要以 `/` 结尾。 */
+fun existingGalleryImageLookup(fileName: String): GalleryImageLookup {
+  return GalleryImageLookup(
+    selection = "${MediaStore.Images.Media.DISPLAY_NAME} = ? AND ${MediaStore.Images.Media.RELATIVE_PATH} = ?",
+    selectionArgs = arrayOf(fileName, "${walloraPicturesRelativePath()}/")
+  )
+}
+
 /**
- * 将图片字节写入系统 MediaStore 相册（Pictures/Wallora 目录）。
+ * 将本地临时图片复制到系统 MediaStore 相册（Pictures/Wallora 目录）。
  *
- * Android Q（API 29）起使用 [MediaStore.Images.Media.IS_PENDING] 机制：
- * 先标记为"写入中"，写完后再置为 0，防止其他应用在写入期间读到不完整文件。
- * 低版本直接写入，无此保护。
+ * 如果目标目录下已经有同名图片，则直接返回已有 Uri，不覆盖也不重复插入。
+ *
+ * 使用 [MediaStore.Images.Media.IS_PENDING] 机制：先标记为“写入中”，
+ * 写完后再置为 0，防止其他应用在写入期间读到不完整文件。
  *
  * @param fileName 相册中显示的文件名（含扩展名）
  * @param mimeType 图片 MIME 类型，如 "image/jpeg"
- * @param imageBytes 图片原始字节
+ * @param localPath Rust 共享下载器写入的本地临时图片路径
  * @return 插入后的 MediaStore URI
  */
-fun saveToPictures(context: Context, fileName: String, mimeType: String, imageBytes: ByteArray): Uri {
+fun saveToPictures(context: Context, fileName: String, mimeType: String, localPath: String): Uri {
   val resolver = context.contentResolver
+  existingGalleryImageUri(context, fileName)?.let { return it }
+
   val values = ContentValues().apply {
     put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
     put(MediaStore.Images.Media.MIME_TYPE, mimeType)
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      put(
-        MediaStore.Images.Media.RELATIVE_PATH,
-        "${Environment.DIRECTORY_PICTURES}/Wallora"
-      )
-      put(MediaStore.Images.Media.IS_PENDING, 1)
-    }
+    put(MediaStore.Images.Media.RELATIVE_PATH, walloraPicturesRelativePath())
+    put(MediaStore.Images.Media.IS_PENDING, 1)
   }
 
   val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
     ?: error("Could not create MediaStore image entry")
-  resolver.openOutputStream(uri)?.use { output -> output.write(imageBytes) }
+  resolver.openOutputStream(uri)?.use { output ->
+    File(localPath).inputStream().use { input -> input.copyTo(output) }
+  }
     ?: error("Could not open MediaStore output stream")
 
-  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-    val finishedValues = ContentValues().apply {
-      put(MediaStore.Images.Media.IS_PENDING, 0)
-    }
-    resolver.update(uri, finishedValues, null, null)
+  val finishedValues = ContentValues().apply {
+    put(MediaStore.Images.Media.IS_PENDING, 0)
   }
+  resolver.update(uri, finishedValues, null, null)
 
   return uri
+}
+
+/** 查询 Wallora 相册目录下是否已有同名图片，有则复用其 Uri。 */
+fun existingGalleryImageUri(context: Context, fileName: String): Uri? {
+  val lookup = existingGalleryImageLookup(fileName)
+  context.contentResolver.query(
+    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+    arrayOf(MediaStore.Images.Media._ID),
+    lookup.selection,
+    lookup.selectionArgs,
+    null
+  )?.use { cursor ->
+    if (cursor.moveToFirst()) {
+      val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID))
+      return Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id.toString())
+    }
+  }
+  return null
 }
 
 /**
@@ -351,7 +392,7 @@ fun screenDimensions(context: Context): Pair<Int, Int> {
 }
 
 /**
- * 将图片字节设置为系统壁纸，自动按图片方向选择处理策略：
+ * 将本地图片设置为系统壁纸，自动按图片方向选择处理策略：
  *
  * - **竖图**（高 > 宽）：直接以流式方式写入，不做任何缩放或裁剪，
  *   由系统自行处理缩放偏移，保留完整图像细节。
@@ -359,10 +400,11 @@ fun screenDimensions(context: Context): Pair<Int, Int> {
  *   再等比缩放到屏幕高度，最后居中裁剪到屏幕宽度，
  *   确保横图在竖屏设备上填满屏幕且不变形。
  *
- * @param imageBytes 图片原始字节（JPEG）
+ * @param localPath Rust 共享下载器写入的本地临时图片路径
  * @param targets 写入目标（主屏幕 / 锁屏 / 两者）
  */
-fun applyWallpaper(context: Context, imageBytes: ByteArray, targets: WallpaperTargets) {
+fun applyWallpaper(context: Context, localPath: String, targets: WallpaperTargets) {
+  val imageBytes = File(localPath).readBytes()
   val manager = WallpaperManager.getInstance(context)
   val (screenW, screenH) = screenDimensions(context)
 

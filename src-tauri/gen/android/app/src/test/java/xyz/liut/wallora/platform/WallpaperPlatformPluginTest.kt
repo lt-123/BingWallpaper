@@ -1,9 +1,11 @@
 package xyz.liut.wallora.platform
 
 import android.app.WallpaperManager
+import android.provider.MediaStore
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
+import xyz.liut.wallora.BuildConfig
 
 class WallpaperPlatformPluginTest {
   @Test
@@ -50,5 +52,30 @@ class WallpaperPlatformPluginTest {
     val args = SyncPlatformPreferencesArgs()
 
     assertFalse(args.excludeFromRecents)
+  }
+
+  @Test
+  fun androidMinimumSdkSupportsScopedMediaStorePaths() {
+    assertEquals(29, WALLORA_MIN_SDK)
+    assertEquals(WALLORA_MIN_SDK, BuildConfig.WALLORA_MIN_SDK)
+  }
+
+  @Test
+  fun mediaStoreSaveUsesStableWalloraPicturesPath() {
+    assertEquals("Pictures/Wallora", walloraPicturesRelativePath())
+  }
+
+  @Test
+  fun mediaStoreLookupMatchesDisplayNameAndRelativePath() {
+    val lookup = existingGalleryImageLookup("bing-20260617-example.jpg")
+
+    assertEquals(
+      "${MediaStore.Images.Media.DISPLAY_NAME} = ? AND ${MediaStore.Images.Media.RELATIVE_PATH} = ?",
+      lookup.selection
+    )
+    assertEquals(
+      listOf("bing-20260617-example.jpg", "Pictures/Wallora/"),
+      lookup.selectionArgs.toList()
+    )
   }
 }

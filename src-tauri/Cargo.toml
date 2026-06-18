@@ -35,3 +35,6 @@ wallpaper = "3.2"
 jni = { version = "0.21", features = ["invocation"] }
 # 显式声明 tokio 供 android_jni.rs 创建单线程 runtime；Tauri 已编译全特性，此处无冲突
 tokio = { version = "1", features = ["rt"] }
+
+[dev-dependencies]
+tempfile = "3"

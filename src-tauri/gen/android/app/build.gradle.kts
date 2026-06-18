@@ -26,8 +26,9 @@ android {
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
         applicationId = "xyz.liut.wallora"
-        minSdk = 24
+        minSdk = 29
         targetSdk = 36
+        buildConfigField("int", "WALLORA_MIN_SDK", "29")
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
     }

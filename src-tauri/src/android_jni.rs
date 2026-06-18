@@ -7,7 +7,7 @@
 //!
 //! 调用路径：
 //! - Worker/Tile → RustCore.fetchAndApplyLatestWallpaper (JNI) → Rust
-//! - 手动应用 → Tauri 命令 → Rust async 下载 → spawn_blocking → JAVA_VM attach → Rust JNI 回调
+//! - 手动应用 → Tauri 命令 → Rust async 下载到本地临时文件 → spawn_blocking → JAVA_VM attach → Rust JNI 回调
 
 use jni::objects::{JClass, JObject, JString, JValue};
 use jni::sys::jboolean;
@@ -102,7 +102,13 @@ pub extern "C" fn Java_xyz_liut_wallora_platform_RustCore_fetchAndApplyLatestWal
         Ok(()) => 1,
         Err(e) => {
             eprintln!("[Wallora] fetchAndApplyLatestWallpaper error: {e}");
-            let _ = jni_post_notification(&mut env, &context, "壁纸更新失败", &e, RESULT_NOTIFICATION_ID);
+            let _ = jni_post_notification(
+                &mut env,
+                &context,
+                "壁纸更新失败",
+                &e,
+                RESULT_NOTIFICATION_ID,
+            );
             0
         }
     }
@@ -137,12 +143,12 @@ fn fetch_and_apply_latest_impl(
         .next()
         .ok_or_else(|| "Bing 未返回壁纸".to_string())?;
 
-    let bytes = rt.block_on(crate::download_bytes_by_url(&wallpaper.image_url))?;
+    let local_path = rt.block_on(crate::download_wallpaper_to_temporary_file(&wallpaper))?;
 
-    apply_bytes_via_jni(
+    apply_file_via_jni(
         env,
         context,
-        &bytes,
+        &local_path,
         &wallpaper.download_file_name(),
         &wallpaper.title,
         &config,
@@ -151,25 +157,23 @@ fn fetch_and_apply_latest_impl(
 }
 
 /// 共享的 Android 平台操作：存相册 + 设置壁纸 + 通知。
+///
+/// 传入的是 Rust 共享下载器生成的本地临时文件路径。Kotlin 平台层负责从该路径
+/// 复制到 MediaStore 或交给 WallpaperManager，避免 Android 走另一套下载逻辑。
 /// Worker JNI 路径和 Tauri 命令 spawn_blocking 路径均调用此函数。
-pub fn apply_bytes_via_jni(
+pub fn apply_file_via_jni(
     env: &mut JNIEnv,
     context: &JObject,
-    bytes: &[u8],
+    local_path: &std::path::Path,
     file_name: &str,
     title: &str,
     config: &AppConfig,
     show_notification: bool,
 ) -> Result<(), String> {
     if config.save_to_file_system {
-        jni_save_to_gallery(env, context, file_name, bytes)?;
+        jni_save_to_gallery(env, context, file_name, local_path)?;
     }
-    jni_set_wallpaper(
-        env,
-        context,
-        bytes,
-        config.platform.set_lock_screen,
-    )?;
+    jni_set_wallpaper(env, context, local_path, config.platform.set_lock_screen)?;
     if show_notification {
         jni_post_notification(env, context, "壁纸已更新", title, RESULT_NOTIFICATION_ID)?;
     }
@@ -180,19 +184,22 @@ fn jni_save_to_gallery(
     env: &mut JNIEnv,
     context: &JObject,
     file_name: &str,
-    bytes: &[u8],
+    local_path: &std::path::Path,
 ) -> Result<(), String> {
     let class = platform_apis_class()?;
     let j_file_name = env.new_string(file_name).map_err(|e| e.to_string())?;
-    let j_bytes = env.byte_array_from_slice(bytes).map_err(|e| e.to_string())?;
+    let path = local_path
+        .to_str()
+        .ok_or_else(|| "临时壁纸路径不是有效 UTF-8".to_string())?;
+    let j_path = env.new_string(path).map_err(|e| e.to_string())?;
     env.call_static_method(
         class,
         "saveToGallery",
-        "(Landroid/content/Context;Ljava/lang/String;[B)V",
+        "(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;)V",
         &[
             JValue::from(context),
             JValue::from(&j_file_name),
-            JValue::from(&j_bytes),
+            JValue::from(&j_path),
         ],
     )
     .map_err(|e| format!("JNI saveToGallery 错误: {e}"))?;
@@ -202,18 +209,21 @@ fn jni_save_to_gallery(
 fn jni_set_wallpaper(
     env: &mut JNIEnv,
     context: &JObject,
-    bytes: &[u8],
+    local_path: &std::path::Path,
     set_lock_screen: bool,
 ) -> Result<(), String> {
     let class = platform_apis_class()?;
-    let j_bytes = env.byte_array_from_slice(bytes).map_err(|e| e.to_string())?;
+    let path = local_path
+        .to_str()
+        .ok_or_else(|| "临时壁纸路径不是有效 UTF-8".to_string())?;
+    let j_path = env.new_string(path).map_err(|e| e.to_string())?;
     env.call_static_method(
         class,
         "setWallpaper",
-        "(Landroid/content/Context;[BZ)V",
+        "(Landroid/content/Context;Ljava/lang/String;Z)V",
         &[
             JValue::from(context),
-            JValue::from(&j_bytes),
+            JValue::from(&j_path),
             JValue::Bool(set_lock_screen as u8),
         ],
     )

@@ -8,16 +8,16 @@ import android.content.Context
  */
 object PlatformApis {
 
-    /** 将图片存入系统相册（Wallora 目录）。 */
+    /** 将本地临时图片存入系统相册（Wallora 目录），若同名图片已存在则复用。 */
     @JvmStatic
-    fun saveToGallery(context: Context, fileName: String, imageBytes: ByteArray) {
-        saveToPictures(context, fileName, "image/jpeg", imageBytes)
+    fun saveToGallery(context: Context, fileName: String, localPath: String) {
+        saveToPictures(context, fileName, "image/jpeg", localPath)
     }
 
-    /** 将图片设置为系统壁纸。 */
+    /** 从本地临时图片路径读取内容并设置为系统壁纸。 */
     @JvmStatic
-    fun setWallpaper(context: Context, imageBytes: ByteArray, setLockScreen: Boolean) {
-        applyWallpaper(context, imageBytes, WallpaperTargets.from(setLockScreen))
+    fun setWallpaper(context: Context, localPath: String, setLockScreen: Boolean) {
+        applyWallpaper(context, localPath, WallpaperTargets.from(setLockScreen))
     }
 
     /** 发送系统通知。 */
